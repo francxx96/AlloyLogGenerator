@@ -8,8 +8,11 @@ import core.models.intervals.FloatValue;
 import core.models.intervals.IntervalSplit;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 /**
@@ -36,26 +39,26 @@ public class FloatDataImpl extends NumericDataImpl {
     protected void generate() {
         intervals = new HashMap<>();
 
-        if (splits.size() == 0) {
+        if (splits.isEmpty()) {
             addBetweenInterval(Pair.of(min, false), Pair.of(max, true));
             return;
         }
 
-        List<Pair<Float, Boolean>> floatValues = splits.stream().map(i -> Pair.of(i.getParsedValue(Float::parseFloat), i.isRight())).distinct().collect(Collectors.toList());
-
-        if (floatValues.get(0).getKey() > min)
-            floatValues.add(0, Pair.of(min, false));
-        if (floatValues.get(floatValues.size() - 1).getKey() < max)
-            floatValues.add(floatValues.size(), Pair.of(max, true));
+        SortedSet<Pair<Float, Boolean>> floatValues = new TreeSet<>( splits.stream().map(i -> Pair.of(i.getParsedValue(Float::parseFloat), i.isRight())).distinct().collect(Collectors.toList()) );
+        
+        if (floatValues.first().getKey() > min)
+            floatValues.add(Pair.of(min, false));
+        if (floatValues.last().getKey() < max)
+            floatValues.add(Pair.of(max, true));
 
         if (includeMin)
-            intervals.put(formatEquals(floatValues.get(0).getKey()), new FloatValue(floatValues.get(0).getKey()));
+            intervals.put(formatEquals(floatValues.first().getKey()), new FloatValue(floatValues.first().getKey()));
 
         if (includeMax)
-            intervals.put(formatEquals(floatValues.get(floatValues.size() - 1).getKey()), new FloatValue(floatValues.get(floatValues.size() - 1).getKey()));
+            intervals.put(formatEquals(floatValues.last().getKey()), new FloatValue(floatValues.last().getKey()));
 
         addValues(splits);
-        addIntervals(floatValues);
+        addIntervals( new ArrayList<>(floatValues) );
     }
 
     private void addValues(List<IntervalSplit> splits) {
