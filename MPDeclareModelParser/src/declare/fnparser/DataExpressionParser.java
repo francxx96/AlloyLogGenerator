@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
  * Created by Vasiliy on 2017-10-19.
  */
 public class DataExpressionParser {
-    private String opTokenRegex = "(?i)\\s+(is\\s+not|is|not\\s+in|in|or|and|not|same|different|exist)\\s+"; 	// (?i) means case-insensitive
+    private String opTokenRegex = "(?i)(\\s+(is\\s+not|is|not\\s+in|in|or|and))|(\\s*(not|same|different|exist))\\s+"; 	// (?i) means case-insensitive
     private Pattern opTokenPattern = Pattern.compile(opTokenRegex);
     
     private String numTokenRegex = "-?\\d+(\\.\\d+)?";
@@ -92,7 +92,18 @@ public class DataExpressionParser {
     	if (tokens.isEmpty())	// Empty expression evaluates to true
             return new ValueExpression(new Token(0, Token.Type.Activity, "True[]"));   
     	
-    	// Parsing operators and comparators at first
+    	tokens = unrollNotEqualsTokens(tokens);
+    	
+    	// Parsing "and", "or" logical operators at first
+    	for (Token tkn : tokens) {
+    		switch (tkn.getValue().toLowerCase().replaceAll("\\s+"," ").strip()) {
+    		case "or":
+    		case "and":
+    			return new BinaryExpression(tkn, getLeft(tokens, tkn.position), getRight(tokens, tkn.position));
+    		}
+    	}
+    	
+    	// Then, parsing comparators and remaining operators
         for (Token tkn : tokens) {
         	if (tkn.getType() == Token.Type.Comparator) {
         		return new BinaryExpression(tkn, getLeft(tokens, tkn.position), getRight(tokens, tkn.position));
@@ -107,8 +118,6 @@ public class DataExpressionParser {
         			return new UnaryExpression(tkn, getRight(tokens, tkn.position));
         		
         		// Binary operators
-        		case "or":
-        		case "and":
         		case "is":
         		case "is not":
         		case "in":
@@ -122,14 +131,14 @@ public class DataExpressionParser {
         }
         
         String setTokenRegex = "\\((\\S+,\\s+)*\\S+\\)";
-        // Parsing other tokens at last
+        // Parsing remaining tokens at last
         for (Token tkn : tokens) {
         	switch (tkn.getType()) {
 			case Group:
 				// Since Group type matches everything is surrounded by parentheses, it matches also Set type.
 	        	// So, before recursion, it has to be checked if the Group is nothing more than a Set.
 				if (tkn.getValue().matches(setTokenRegex))
-					return new ValueExpression(tkn);
+					return new ValueExpression(new Token(tkn.getPosition(), Token.Type.Set, tkn.getValue()));
 				
 				// Recursive call
 				return parse(tkn.getValue().substring(1, tkn.getValue().length()-1)); // Cutting the surrounding parentheses
@@ -146,6 +155,36 @@ public class DataExpressionParser {
         }
 
         throw new DeclareParserException(String.join(", ", tokens.stream().map(Object::toString).collect(Collectors.toList())));
+    }
+    
+    private List<Token> unrollNotEqualsTokens(List<Token> tokens) {
+    	List<Token> notEqTokens = tokens.stream()
+    									.filter(tkn -> tkn.getType().equals(Token.Type.Comparator) && tkn.getValue().equals("!="))
+    									.collect(Collectors.toList());
+    	
+    	/*
+    	 * A "!=" token can be seen as a conjunction of two tokens "<" and ">" with the same operands.
+    	 * For example: 				(x != 1)    <==>    (x < 1) OR (x > 1)
+    	 */
+    	if (!notEqTokens.isEmpty()) {
+    		// Iterating in reversed order to maintain the valid position references of the single not-equals tokens
+    		for (Token neqTkn : notEqTokens) {
+    			Token precOperand = tokens.get(tokens.indexOf(neqTkn)-1);
+    			Token succOperand = tokens.get(tokens.indexOf(neqTkn)+1);
+    			
+    			// Grouping the unrolled tokens
+    			Token conj = new Token(0, Token.Type.Group, "(" + precOperand.getValue() + " < " + succOperand.getValue() + " or "
+    															+ precOperand.getValue() + " > " + succOperand.getValue() + ")" );
+    			tokens.set(tokens.indexOf(precOperand), conj);
+    			tokens.remove(tokens.indexOf(neqTkn));
+    			tokens.remove(tokens.indexOf(succOperand));
+    		}
+    		
+    		// Updating the token positions
+	        tokens.forEach(elem -> elem.setPosition(tokens.indexOf(elem)) );
+    	}
+    	
+    	return tokens;
     }
 
     private DataExpression getLeft(List<Token> tokens, int position) throws DeclareParserException {
