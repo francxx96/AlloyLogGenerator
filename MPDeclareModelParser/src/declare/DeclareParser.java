@@ -132,7 +132,7 @@ public class DeclareParser {
     }
 
     public boolean isDataConstraint(String line) {
-        return line.matches(".+\\[.+\\](\\|[^\\|\\n\\r]*){0,2}");
+        return line.matches(".+\\[.+\\]\\s*(\\|[^\\|\\n\\r]*){0,2}");
     }
 
     public String[] splitStatements(String code) {

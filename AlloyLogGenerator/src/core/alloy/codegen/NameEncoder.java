@@ -107,10 +107,10 @@ public class NameEncoder {
         	
         	} else if (parser.isDataConstraint(line)) {
         		// Encoding templates of the data constraint
-            	Pattern templatePattern = Pattern.compile(".*\\[.*\\]");
+            	Pattern templatePattern = Pattern.compile(".*\\[.*\\]\\s*");
             	Matcher mTempl = templatePattern.matcher(line);
             	if (mTempl.find()) {
-            		String templates = mTempl.group();
+            		String templates = mTempl.group().trim();
             		encodedLine += templates.substring(0, templates.indexOf('[')+1);
             		String[] activities = templates.substring(templates.indexOf('[')+1, templates.lastIndexOf(']')).split(",\\s+");
             		
