@@ -5,7 +5,6 @@
 	<classpathentry kind="src" path="AlloyLogGenerator/tests"/>
 	<classpathentry kind="src" path="MPDeclareModelParser/src"/>
 	<classpathentry kind="src" path="MPDeclareModelParser/test"/>
-	<classpathentry kind="src" path="SmvGenerator/src"/>
 	<classpathentry kind="lib" path="libs/alloy4.2.jar"/>
 	<classpathentry kind="lib" path="libs/commons-lang3-3.6.jar"/>
 	<classpathentry kind="lib" path="libs/gson-2.7.jar"/>
