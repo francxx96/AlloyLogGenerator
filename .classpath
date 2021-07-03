@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="src" path="AlloyLogGenerator/src"/>
+	<classpathentry kind="src" path="AlloyLogGenerator/tests"/>
+	<classpathentry kind="src" path="MPDeclareModelParser/src"/>
+	<classpathentry kind="src" path="MPDeclareModelParser/test"/>
+	<classpathentry kind="src" path="SmvGenerator/src"/>
+	<classpathentry kind="lib" path="libs/alloy4.2.jar"/>
+	<classpathentry kind="lib" path="libs/commons-lang3-3.6.jar"/>
+	<classpathentry kind="lib" path="libs/gson-2.7.jar"/>
+	<classpathentry kind="lib" path="libs/guava-18.0.jar"/>
+	<classpathentry kind="lib" path="libs/OpenXES.jar"/>
+	<classpathentry kind="lib" path="libs/Spex.jar"/>
+	<classpathentry kind="lib" path="libs/testng-6.9.9.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
