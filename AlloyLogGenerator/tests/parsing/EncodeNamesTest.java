@@ -1,11 +1,15 @@
 package parsing;
 
 import core.alloy.codegen.NameEncoder;
+import core.alloy.codegen.NameEncoder.DataMappingElement;
 import declare.DeclareParser;
+import declare.DeclareParserException;
+
 import org.apache.commons.lang3.StringUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -51,19 +55,32 @@ public class EncodeNamesTest {
                 "NotRespondedExistence[telefonisch_consult A, alkalische_fosfatase__kinetisch_ T]|((A.Producer code is SGAL ) or ( A.Producer code is SGNA ))| \n" +
                 "Absence[aanname_laboratoriumonderzoek A]|(A.Section is Section_4 ) and (A.SpecialismCode is 86) and (A.org::group is not General_Lab_Clinical_Chemistry)\n";
 
-        NameEncoder encoder = new NameEncoder(parser);
-        String encoded = encoder.encode(declare);
-        Map<String, String> encoding = encoder.getEncoding();
-        String[] keys = new String[encoding.size()];
-        String[] values = new String[encoding.size()];
-        int i = 0;
-        for (String key : encoding.keySet()) {
-            keys[i] = key;
-            values[i] = encoding.get(key);
-            ++i;
-        }
-
-        String decoded = StringUtils.replaceEach(encoded, keys, values);
-        Assert.assertEquals(declare.replace("::",":"), decoded);
+        
+        try {
+        	NameEncoder encoder = new NameEncoder(parser);
+	        String encoded = encoder.encode(declare);
+			
+	        Map<String, String> allEncodings = new HashMap<>();
+	        allEncodings.putAll(encoder.getTraceAttributeMapping());
+	        allEncodings.putAll(encoder.getActivityMapping());
+	        for (DataMappingElement dme : encoder.getDataMapping())
+	        	allEncodings.putAll(dme.getValuesMapping());
+	        
+	        String[] keys = new String[allEncodings.size()];
+	        String[] values = new String[allEncodings.size()];
+	        int i = 0;
+	        for (String key : allEncodings.keySet()) {
+	            keys[i] = key;
+	            values[i] = allEncodings.get(key);
+	            ++i;
+	        }
+	
+	        String decoded = StringUtils.replaceEach(encoded, keys, values);
+	        Assert.assertEquals(declare.replace("::",":"), decoded);
+        
+        } catch (DeclareParserException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     }
 }

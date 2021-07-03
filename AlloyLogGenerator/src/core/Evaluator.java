@@ -299,7 +299,7 @@ public class Evaluator {
         Global.log.accept("Found Solution: " + (solution != null && solution.satisfiable()));
 
         AlloyLogExtractor ale = new AlloyLogExtractor(world, gen.generateNumericMap(), getTraceAttributesImpl(model),
-                encoder.getEncoding(), start, duration);
+                										encoder, start, duration);
         return ale.extract(solution, numberOfTraces, maxTraceLength, reuse);
     }
 

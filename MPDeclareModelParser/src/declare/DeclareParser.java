@@ -13,7 +13,6 @@ import declare.lang.data.IntegerData;
 import declare.lang.trace.EnumTraceAttribute;
 import declare.lang.trace.FloatTraceAttribute;
 import declare.lang.trace.IntTraceAttribute;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -121,7 +120,7 @@ public class DeclareParser {
     }
 
     public boolean isData(String line) {
-        return (StringUtils.countMatches(line, ':') % 2 == 1 && !isTraceAttribute(line)) && !isDataBinding(line);
+    	return line.matches(".+:\\s+(((integer|float)\\s+between\\s+\\d+(\\.\\d+)?\\s+and\\s+\\d+(\\.\\d+)?)|((\\S+,\\s+)*\\S+))\\s*") && !isTraceAttribute(line) && !isDataBinding(line);
     }
 
     public boolean isDataBinding(String line) {
@@ -133,7 +132,7 @@ public class DeclareParser {
     }
 
     public boolean isDataConstraint(String line) {
-        return line.contains("|");
+        return line.matches(".+\\[.+\\](\\|[^\\|\\n\\r]*){0,2}");
     }
 
     public String[] splitStatements(String code) {

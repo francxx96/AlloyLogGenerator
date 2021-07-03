@@ -1,3 +1,4 @@
+import core.alloy.codegen.NameEncoder;
 import core.alloy.serialization.AlloyLogExtractor;
 import core.models.declare.data.NumericToken;
 import core.models.intervals.Interval;
@@ -118,7 +119,7 @@ public class Serializer {
         EventAdapter d = new EventAdapter(0, "", Arrays.asList(pd));
         Map<String, Interval> map = new HashMap<>();
         map.put("b", null);
-        AlloyLogExtractor ser = new AlloyLogExtractor(new ModuleStub(), map, new ArrayList<>(), new HashMap<>(), LocalDateTime.now(), Duration.ofHours(5));
+        AlloyLogExtractor ser = new AlloyLogExtractor(new ModuleStub(), map, new ArrayList<>(), new NameEncoder(null), LocalDateTime.now(), Duration.ofHours(5));
         orderedStateEvents.add(a);
         orderedStateEvents.add(b);
         orderedStateEvents.add(c);
