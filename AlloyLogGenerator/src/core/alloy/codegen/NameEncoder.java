@@ -110,9 +110,15 @@ public class NameEncoder {
             	Pattern templatePattern = Pattern.compile(".*\\[.*\\]\\s*");
             	Matcher mTempl = templatePattern.matcher(line);
             	if (mTempl.find()) {
-            		String templates = mTempl.group().trim();
-            		encodedLine += templates.substring(0, templates.indexOf('[')+1);
-            		String[] activities = templates.substring(templates.indexOf('[')+1, templates.lastIndexOf(']')).split(",\\s+");
+            		String templateStr = mTempl.group().trim();
+            		String templateName = templateStr.substring(0, templateStr.indexOf('['));
+            		String[] activities = templateStr.substring(templateStr.indexOf('[')+1, templateStr.lastIndexOf(']')).split(",\\s+");
+            		
+            		String n = null;
+            		if (templateName.matches("Absence|Existence|Exactly") && activities.length > 1) {
+            			n = activities[activities.length-1];
+            			activities = Arrays.copyOf(activities, activities.length-1);
+            		}
             		
             		List<String> encodedActivityNames = new ArrayList<>();
             		for (String act : activities)
@@ -120,8 +126,11 @@ public class NameEncoder {
             				if (e.getValue().equals(act))
             					encodedActivityNames.add(e.getKey());
             		
-            		encodedLine += String.join(", ", encodedActivityNames) + "]";
-            		line = line.substring(templates.length()).trim();
+            		if (n != null)
+            			encodedActivityNames.add(n);
+            		
+            		encodedLine += templateName + "[" + String.join(", ", encodedActivityNames) + "]";
+            		line = line.substring(templateStr.length()).trim();
             	}
             	
             	// Encoding condition of the data constraint
