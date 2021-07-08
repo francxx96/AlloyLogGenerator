@@ -18,6 +18,9 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import core.Global;
 
 /**
  * Created by Vasiliy on 2017-10-16.
@@ -34,17 +37,24 @@ public class DeclareParser {
 
     DataExpressionParser expressionParser = new DataExpressionParser();
 
-    public DeclareModel Parse(String declare)
-            throws DeclareParserException {
+    public DeclareModel Parse(String declare) throws DeclareParserException {
         Init();
         DeclareModel model = new DeclareModel();
+        
         SortInput(splitStatements(declare));
+        
         model.setActivities(parseActivities(tasksCode));
+        checkInterference( declare, model.getActivities().stream().map(act -> act.getName()).collect(Collectors.toList()) );
+        
         parseData(dataCode, model.getEnumeratedData(), model.getIntegerData(), model.getFloatData());
+        for (EnumeratedData datum : model.getEnumeratedData())
+        	checkInterference(declare, Stream.concat(datum.getValues().stream(), List.of(datum.getType()).stream()).collect(Collectors.toList()) );
+        
         ParseDataBindings(model.getActivityToData(), model.getDataToActivity());
         model.setConstraints(parseConstraints());
         model.setDataConstraints(parseDataConstraints(dataConstraintsCode));
         parseTraceAttributes(traceAttributesCode, model.getEnumTraceAttributes(), model.getIntTraceAttributes(), model.getFloatTraceAttributes());
+        
         return model;
     }
 
@@ -88,10 +98,12 @@ public class DeclareParser {
     private void ParseDataBindings(Map<String, Set<String>> activityToData, Map<String, Set<String>> dataToActivity) {
         for (String line : dataBindingsCode) {
             line = line.substring(5);
-            List<String> data = Arrays.stream(line.split("[:,\\s]+")).filter(i -> !i.isEmpty()).collect(Collectors.toList());
+            List<String> data = Arrays.stream(line.split("[:,\\s+]+")).filter(i -> !i.isEmpty()).collect(Collectors.toList());
+            
             String activity = data.get(0);
             if (!activityToData.containsKey(activity))
                 activityToData.put(activity, new HashSet<>());
+            
             for (String i : data.stream().skip(1).collect(Collectors.toList())) {
                 activityToData.get(activity).add(i);
                 if (!dataToActivity.containsKey(i))
@@ -149,18 +161,16 @@ public class DeclareParser {
         return data;
     }
 
-    public void parseData(List<String> dataCode, Set<EnumeratedData> edata,
-                          Set<IntegerData> idata, Set<FloatData> fdata) {
+    public void parseData(List<String> dataCode, Set<EnumeratedData> edata, Set<IntegerData> idata, Set<FloatData> fdata) {
         for (String i : dataCode) {
             String[] a = i.split(":\\s*|,?\\s+");
 
-            if (a[1].equals("integer") && a[2].equals("between")) {
+            if (a[1].equals("integer") && a[2].equals("between"))
                 idata.add(new IntegerData(a[0], Integer.parseInt(a[3]), Integer.parseInt(a[5]), true));
-            } else if (a[1].equals("float") && a[2].equals("between")) {
+            else if (a[1].equals("float") && a[2].equals("between"))
                 fdata.add(new FloatData(a[0], Float.parseFloat(a[3]), Float.parseFloat(a[5]), true));
-            } else {
+            else
                 edata.add(new EnumeratedData(a[0], Arrays.stream(a).skip(1).collect(Collectors.toList()), true));
-            }
         }
     }
 
@@ -170,12 +180,11 @@ public class DeclareParser {
             String[] lr = st.getCode().split("\\|", -1);
             String activity = lr[0].substring(0, lr[0].indexOf('['));
             List<String[]> args = Arrays.stream(getActivityArgsFromConstraintText(lr[0]).split(",\\s*"))
-                    .map(i -> (i + " A").split("\\s+"))
-                    .collect(Collectors.toList());
+					                    .map(i -> (i + " A").split("\\s+"))
+					                    .collect(Collectors.toList());
 
-            if (args.size() > 1) {
+            if (args.size() > 1)
                 args.get(1)[args.get(1).length - 1] = "B";
-            }
 
             List<DataFunction> fns = new ArrayList<>();
             for (int i = 1; i < lr.length; ++i) {
@@ -185,8 +194,6 @@ public class DeclareParser {
             }
 
             DataConstraint c = new DataConstraint(activity, args.stream().map(i -> i[0]).collect(Collectors.toList()), fns, st);
-
-
             dataConstraints.add(c);
         }
 
@@ -205,13 +212,76 @@ public class DeclareParser {
         for (String i : traceAttributesCode) {
             String[] a = i.split(":\\s*|,?\\s+");
 
-            if (a[2].equals("integer")) {
+            if (a[2].equals("integer"))
                 ita.add(new IntTraceAttribute(a[1], Integer.parseInt(a[4]), Integer.parseInt(a[6])));
-            } else if (a[2].equals("float")) {
+            else if (a[2].equals("float"))
                 fta.add(new FloatTraceAttribute(a[1], Float.parseFloat(a[4]), Float.parseFloat(a[6])));
-            } else {
+            else
                 eta.add(new EnumTraceAttribute(a[1], Arrays.stream(a).skip(2).collect(Collectors.toList())));
-            }
+        }
+    }
+    
+ // May throw exception if name might interfere with reserved keywords
+    private void checkInterference(String declare, List<String> names) {
+        //String keywords = IOHelper.readAllText("./data/keywords.txt");
+        String keywords = " activity x\n" +
+                " Init[]\n" +
+                " Existence[] \n" +
+                " Existence[]\n" +
+                " Absence[]\n" +
+                " Absence[]\n" +
+                " Exactly[]\n" +
+                " Choice[] \n" +
+                " ExclusiveChoice[] \n" +
+                " RespondedExistence[] \n" +
+                " Response[] \n" +
+                " AlternateResponse[] \n" +
+                " ChainResponse[]\n" +
+                " Precedence[] \n" +
+                " AlternatePrecedence[] \n" +
+                " ChainPrecedence[] \n" +
+                " NotRespondedExistence[] \n" +
+                " NotResponse[] \n" +
+                " NotPrecedence[] \n" +
+                " NotChainResponse[]\n" +
+                " NotChainPrecedence[]\n" +
+                " integer between x and x\n" +
+                " float between x and x\n" +
+                " trace x\n" +
+                " bind x\n" +
+                " : , x\n" +
+                " is not x\n" +
+                " not in x\n" +
+                " is x\n" +
+                " in x\n" +
+                " not x\n" +
+                " or x\n" +
+                " and x\n" +
+                " same x\n" +
+                " different x\n" +
+                " not x\n" +
+                " [ ] x\n" +
+                " ( ) x\n" +
+                " . x\n" +
+                " > x\n" +
+                " < x\n" +
+                " >= x\n" +
+                " <= x\n" +
+                " = x\n" +
+                " | x\n" +
+                "\n";
+        
+        for (String name : names) {
+	        if (Global.deepNamingCheck) {
+	            Pattern pattern = Pattern.compile("[\\d\\w]" + name + "[\\d\\w]|[\\d\\w]" + name + "|" + name + "[\\d\\w]");
+	            Matcher m = pattern.matcher(declare);
+	            
+	            if (m.find() && !name.contains(m.group(0)))
+	                Global.log.accept("The name '" + name + "' might be part of reserved keyword. If other errors appear try to rename it or use in quote marks.");
+	        
+	        } else if (keywords.contains(name)) {
+	            Global.log.accept("The name '" + name + "' might be part of reserved keyword. If other errors appear try to rename it or use in quote marks.");
+	        }
         }
     }
 }

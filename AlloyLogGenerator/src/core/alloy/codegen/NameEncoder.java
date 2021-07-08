@@ -1,6 +1,5 @@
 package core.alloy.codegen;
 
-import core.Global;
 import core.helpers.RandomHelper;
 import declare.DeclareParser;
 import declare.DeclareParserException;
@@ -43,9 +42,7 @@ public class NameEncoder {
         	if (parser.isTraceAttribute(line)) {
     			String name = line.substring("trace ".length()).trim();
         		String encoding = RandomHelper.getName();
-        		
-        		checkInterference(declare, name);
-    			traceAttributeMapping.put(encoding, name);
+        		traceAttributeMapping.put(encoding, name);
     			
     			encodedLine = "trace " + encoding;
     		
@@ -53,9 +50,7 @@ public class NameEncoder {
         	} else if (parser.isActivity(line)) {
         		String name = line.substring("activity ".length()).trim();
         		String encoding = RandomHelper.getName();
-        		
-    			checkInterference(declare, name);
-    			activityMapping.put(encoding, name);
+        		activityMapping.put(encoding, name);
     			
     			encodedLine = "activity " + encoding;
         	
@@ -72,7 +67,6 @@ public class NameEncoder {
         				List<String> trueNames = new ArrayList<>();
         				*/
         				List<String> trueNames = Arrays.asList(line.substring((actName+": ").length()).split(",\\s+"));
-        				trueNames.forEach(name -> { checkInterference(declare, name); });
         				
         				for (String dl : dataLines) {
         					for (String name : trueNames) {	//for (String possibleName : possibleDataNames) {
@@ -381,71 +375,6 @@ public class NameEncoder {
     	return dispositions;
     }
     */
-    
-    // may throw exception if name might interfere with reserved keywords
-    private void checkInterference(String declare, String name) {
-        //String keywords = IOHelper.readAllText("./data/keywords.txt");
-        String keywords = " activity x\n" +
-                " Init[]\n" +
-                " Existence[] \n" +
-                " Existence[]\n" +
-                " Absence[]\n" +
-                " Absence[]\n" +
-                " Exactly[]\n" +
-                " Choice[] \n" +
-                " ExclusiveChoice[] \n" +
-                " RespondedExistence[] \n" +
-                " Response[] \n" +
-                " AlternateResponse[] \n" +
-                " ChainResponse[]\n" +
-                " Precedence[] \n" +
-                " AlternatePrecedence[] \n" +
-                " ChainPrecedence[] \n" +
-                " NotRespondedExistence[] \n" +
-                " NotResponse[] \n" +
-                " NotPrecedence[] \n" +
-                " NotChainResponse[]\n" +
-                " NotChainPrecedence[]\n" +
-                " integer between x and x\n" +
-                " float between x and x\n" +
-                " trace x\n" +
-                " bind x\n" +
-                " : , x\n" +
-                " is not x\n" +
-                " not in x\n" +
-                " is x\n" +
-                " in x\n" +
-                " not x\n" +
-                " or x\n" +
-                " and x\n" +
-                " same x\n" +
-                " different x\n" +
-                " not x\n" +
-                " [ ] x\n" +
-                " ( ) x\n" +
-                " . x\n" +
-                " > x\n" +
-                " < x\n" +
-                " >= x\n" +
-                " <= x\n" +
-                " = x\n" +
-                " | x\n" +
-                "\n";
-        
-        //for (String name : names) {
-        
-	        if (keywords.contains(name))
-	            Global.log.accept("The name '" + name + "' might be part of reserved keyword. If other errors appear try to rename it or use in quote marks.");
-	
-	        if (Global.deepNamingCheck) {
-	            Pattern pattern = Pattern.compile("[\\d\\w]" + name + "[\\d\\w]|[\\d\\w]" + name + "|" + name + "[\\d\\w]");
-	            Matcher m = pattern.matcher(declare);
-	            if (m.find() && !name.contains(m.group(0)))
-	                Global.log.accept("The name '" + name + "' might be part of reserved keyword. If other errors appear try to rename it or use in quote marks.");
-	        }
-	        
-        //}
-    }
     
     public Map<String, String> getActivityMapping() {
 		return activityMapping;
