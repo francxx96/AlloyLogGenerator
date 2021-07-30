@@ -99,14 +99,14 @@ public class DataExpressionParser {
     		switch (tkn.getValue().toLowerCase().replaceAll("\\s+"," ").strip()) {
     		case "or":
     		case "and":
-    			return new BinaryExpression(tkn, getLeft(tokens, tkn.position), getRight(tokens, tkn.position));
+    			return new BinaryExpression(tkn, getLeft(tokens, tkn.getPosition()), getRight(tokens, tkn.getPosition()));
     		}
     	}
     	
     	// Then, parsing comparators and remaining operators
         for (Token tkn : tokens) {
         	if (tkn.getType() == Token.Type.Comparator) {
-        		return new BinaryExpression(tkn, getLeft(tokens, tkn.position), getRight(tokens, tkn.position));
+        		return new BinaryExpression(tkn, getLeft(tokens, tkn.getPosition()), getRight(tokens, tkn.getPosition()));
         	
         	} else if (tkn.getType() == Token.Type.Operator) {
         		switch (tkn.getValue().toLowerCase().replaceAll("\\s+"," ").strip()) {
@@ -115,14 +115,14 @@ public class DataExpressionParser {
         		case "same":
         		case "different":
         		case "exist":
-        			return new UnaryExpression(tkn, getRight(tokens, tkn.position));
+        			return new UnaryExpression(tkn, getRight(tokens, tkn.getPosition()));
         		
         		// Binary operators
         		case "is":
         		case "is not":
         		case "in":
         		case "not in":
-        			return new BinaryExpression(tkn, getLeft(tokens, tkn.position), getRight(tokens, tkn.position));
+        			return new BinaryExpression(tkn, getLeft(tokens, tkn.getPosition()), getRight(tokens, tkn.getPosition()));
         			
         		default:
         			throw new DeclareParserException("Unhandled token operator: " + tkn.getValue());

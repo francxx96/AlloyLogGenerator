@@ -28,7 +28,7 @@ public class FloatInterval extends Interval {
         this.includeMax = includeMax;
         this.getValueBetween = valueGenerator;
         if (valueGenerator == null) {
-            // todo: this should not include 0; rnd.nextFloat() -> [0,1). ideally, 0 and 1 inclusion controlled by includeMin and includeMax variables
+            // TODO: this should not include 0; rnd.nextFloat() -> [0,1). ideally, 0 and 1 inclusion controlled by includeMin and includeMax variables
             this.getValueBetween = (amin, amax) -> rnd.nextFloat() * (max - min) + min;
         }
     }

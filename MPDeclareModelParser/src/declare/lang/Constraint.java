@@ -9,7 +9,10 @@ public class Constraint {
     String name;
     List<String> args;
     Statement statement;
-
+    State state;
+    
+    public enum State{ POSSIBLY_SATISFIED, POSSIBLY_VIOLATED, PERMANENTLY_VIOLATED, PERMANENTLY_SATISFIED, STATE_CONFLICT }
+    
     public Constraint(String name, List<String> args, Statement statement) {
         this.name = name;
         this.args = args;
@@ -35,6 +38,14 @@ public class Constraint {
     public Statement getStatement() {
         return statement;
     }
+    
+    public State getState() {
+        return state;
+    }
+
+    public void setState(State state) {
+        this.state = state;
+    }
 
     public boolean isBinary() {
         return args.size() == 2;
@@ -53,5 +64,14 @@ public class Constraint {
                 getName().equals("NotPrecedence") ||
                 getName().equals("NotChainResponse") ||
                 getName().equals("NotChainPrecedence"));
+    }
+    
+    @Override
+    public String toString() {
+        return "Constraint{" +
+                "name='" + name + '\'' +
+                ", args=" + args +
+                ", statement=" + statement +
+                '}';
     }
 }

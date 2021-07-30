@@ -4,10 +4,11 @@ package declare.fnparser;
  * Created by Vasiliy on 2017-10-19.
  */
 public class Token {
-    public enum Type {Activity, Variable, Operator, Set, Number, Comparator, Group, R }
-    int position;
-    Type type;
-    String value;
+    public enum Type { Activity, Variable, Operator, Set, Number, Comparator, Group, R }
+    
+    private int position;
+    private Type type;
+    private String value;
 
     public Token(int position, Type type, String value) {
         this.position = position;

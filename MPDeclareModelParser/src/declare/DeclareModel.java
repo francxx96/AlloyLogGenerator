@@ -136,4 +136,13 @@ public class DeclareModel {
     public void setFloatTraceAttributes(List<FloatTraceAttribute> floatTraceAttributes) {
         this.floatTraceAttributes = floatTraceAttributes;
     }
+    
+    @Override
+    public String toString() {
+        return "DeclareModel{" +
+                "activities=" + activities +
+                ", constraints=" + constraints +
+                ", dataConstraints=" + dataConstraints +
+                '}';
+    }
 }

@@ -10,6 +10,7 @@
 	<classpathentry kind="lib" path="libs/gson-2.7.jar"/>
 	<classpathentry kind="lib" path="libs/guava-18.0.jar"/>
 	<classpathentry kind="lib" path="libs/OpenXES.jar"/>
+	<classpathentry kind="lib" path="libs/OperationalSupport-1.0.jar" />
 	<classpathentry kind="lib" path="libs/Spex.jar"/>
 	<classpathentry kind="lib" path="libs/testng-6.9.9.jar"/>
 	<classpathentry kind="output" path="bin"/>

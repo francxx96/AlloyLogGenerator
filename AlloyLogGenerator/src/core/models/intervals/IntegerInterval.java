@@ -19,7 +19,7 @@ public class IntegerInterval extends Interval { //does not include min and max v
     int max;
     SafeFunction2<Integer, Integer, Integer> getValueBetween;
 
-    public IntegerInterval(int min, int max, SafeFunction2 valueGenerator) {
+    public IntegerInterval(int min, int max, SafeFunction2<Integer, Integer, Integer> valueGenerator) {
         this.min = min;
         this.max = max;
         this.getValueBetween = valueGenerator;
@@ -52,7 +52,7 @@ public class IntegerInterval extends Interval { //does not include min and max v
             if (++iters > maxIter)
                 break;
 
-            value = ++value;
+            ++value;
             if (value == max)
                 value = min + 1;
         }

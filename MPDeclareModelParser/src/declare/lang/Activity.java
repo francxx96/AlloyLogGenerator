@@ -28,4 +28,11 @@ public class Activity {
     public int hashCode() {
         return Objects.hash(name);
     }
+    
+    @Override
+    public String toString() {
+        return "Activity{" +
+                "name='" + name + '\'' +
+                '}';
+    }
 }

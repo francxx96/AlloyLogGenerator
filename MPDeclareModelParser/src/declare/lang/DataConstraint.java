@@ -30,4 +30,15 @@ public class DataConstraint extends Constraint {
     public DataFunction getSecondFunction() {
         return functions.get(1);
     }
+
+    @Override
+    public String toString() {
+        return "DataConstraint{" +
+                "functions=" + functions +
+                ", name='" + name + '\'' +
+                ", args=" + args +
+                ", statement=" + statement +
+                ", state=" + state +
+                '}';
+    }
 }

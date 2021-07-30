@@ -285,9 +285,9 @@ public class Evaluator {
         NameEncoder encoder = new NameEncoder(parser);
         if (Global.encodeNames)
             declare = encoder.encode(declare);
-        DeclareModel model = parser.Parse(declare);
+        DeclareModel model = parser.parse(declare);
         AlloyCodeGenerator gen = new AlloyCodeGenerator(maxTraceLength, minTraceLength, bitwidth, maxSameInstances, vacuity, shuffleConstraints, true);
-        gen.Run(model, negativeTraces, intervalSplits, trace);
+        gen.runLogGeneration(model, negativeTraces, intervalSplits, trace, "log_generation");
 
         String alloyCode = gen.getAlloyCode();
         IOHelper.writeAllText(alsFilename, alloyCode);
@@ -313,7 +313,7 @@ public class Evaluator {
 
         int bitwidth = 5;
         DeclareParser parser = new DeclareParser();
-        DeclareModel model = parser.Parse(declare);
+        DeclareModel model = parser.parse(declare);
         LogToModel logToModel = new LogToModel();
         Set<String> inferredActivities = logToModel.parseActivities(trace);
         model.getActivities().forEach(i -> inferredActivities.remove(i.getName()));
@@ -321,7 +321,7 @@ public class Evaluator {
 
 
         AlloyCodeGenerator gen = new AlloyCodeGenerator(maxTraceLength, 0, bitwidth, 1, vacuity, false, false);
-        gen.Run(model, false, 1, trace);
+        gen.runLogGeneration(model, false, 1, trace, "log_generation");
 
         String alloyCode = gen.getAlloyCode();
         IOHelper.writeAllText(alsFilename, alloyCode);
@@ -390,7 +390,7 @@ public class Evaluator {
 
         int bitwidth = 5;
         DeclareParser parser = new DeclareParser();
-        DeclareModel qModel = parser.Parse(queryDeclare);
+        DeclareModel qModel = parser.parse(queryDeclare);
         if (!(qModel.getActivities().isEmpty() && qModel.getEnumeratedData().isEmpty() &&
                 qModel.getIntegerData().isEmpty() && qModel.getFloatData().isEmpty())) {
             Global.log.accept("Warning: Activity and data definitions in query templates will be ignored");
@@ -404,7 +404,7 @@ public class Evaluator {
 
 
         AlloyCodeGenerator gen = new AlloyCodeGenerator(trace.size(), 0, bitwidth, 0, vacuity, false, true);
-        gen.Run(model, false, 1, trace);
+        gen.runLogGeneration(model, false, 1, trace, "log_generation");
         gen.generateQueryPlaceholder(qb.getParamEncoding(), qb.getDataParams());
         gen.generateDataBindingForQuerying(model.getActivityToData(), model.getDataToActivity());
 

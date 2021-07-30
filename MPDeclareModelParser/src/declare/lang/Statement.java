@@ -35,4 +35,12 @@ public class Statement {
     public int hashCode() {
         return Objects.hash(code, line);
     }
+    
+    @Override
+    public String toString() {
+        return "Statement{" +
+                "code='" + code + '\'' +
+                ", line=" + line +
+                '}';
+    }
 }

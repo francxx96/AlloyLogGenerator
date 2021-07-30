@@ -19,7 +19,7 @@ public class IntegerDataImpl extends NumericDataImpl {
     int min;
     int max;
     int intervalSplits;
-    SafeFunction2 valueGenerator;
+    SafeFunction2<Integer, Integer, Integer> valueGenerator;
 
     public IntegerDataImpl(String type, int min, int max, int intervalSplits, SafeFunction2<Integer, Integer, Integer> valueGenerator, boolean required) {
         this.min = min - 1; // as constructor parameters min and max are included in range, we move them out

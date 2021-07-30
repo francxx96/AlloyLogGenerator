@@ -5,9 +5,20 @@ import declare.DeclareParser;
 import declare.DeclareParserException;
 
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import org.deckfour.xes.extension.std.XConceptExtension;
+import org.deckfour.xes.model.XAttribute;
+import org.deckfour.xes.model.XAttributeMap;
+import org.deckfour.xes.model.XEvent;
+import org.deckfour.xes.model.XTrace;
+import org.deckfour.xes.model.impl.XAttributeContinuousImpl;
+import org.deckfour.xes.model.impl.XAttributeDiscreteImpl;
+import org.deckfour.xes.model.impl.XAttributeLiteralImpl;
+import org.deckfour.xes.model.impl.XAttributeMapImpl;
 
 /**
  * Created by Vasiliy on 2018-05-10.
@@ -123,7 +134,7 @@ public class NameEncoder {
             		if (n != null)
             			encodedActivityNames.add(n);
             		
-            		encodedLine += templateName + "[" + String.join(", ", encodedActivityNames) + "]";
+            		encodedLine += templateName + "[" + String.join(", ", encodedActivityNames) + "] ";
             		line = line.substring(templateStr.length()).trim();
             	}
             	
@@ -375,6 +386,86 @@ public class NameEncoder {
     	return dispositions;
     }
     */
+    
+    public XTrace encodeTrace(XTrace t) {
+    	for (XEvent evt : t) {
+        	String eventName = XConceptExtension.instance().extractName(evt);
+        	
+        	Optional<String> encodedName = activityMapping.entrySet().stream()
+					.filter(entry -> entry.getValue().equals(eventName))
+					.map(Map.Entry::getKey)
+					.findFirst();
+        	
+        	if (encodedName.isPresent()) {
+        		XAttributeMap attributes = new XAttributeMapImpl();
+        		
+        		for (Map.Entry<String,XAttribute> entry : evt.getAttributes().entrySet()) {
+        			
+        			if (entry.getKey().equals(XConceptExtension.KEY_NAME)) {
+        				attributes.put(entry.getKey(), 
+        						new XAttributeLiteralImpl(entry.getValue().getKey(), encodedName.get(), entry.getValue().getExtension()) );
+        			
+        			} else if ( dataMapping.stream()
+    								.map(DataMappingElement::getOriginalName)
+    								.anyMatch(item -> item.equals(entry.getKey())) ) {
+        				
+        				DataMappingElement dme = dataMapping.stream()
+        						.filter(item -> item.getOriginalName().equals(entry.getKey()))
+        						.findFirst().get();
+        				
+        				if (!dme.isNumeric()) {
+        					String encodedValue = dme.getValuesMapping().entrySet().stream()
+    								.filter(e -> e.getValue().equals(entry.getValue().toString()))
+    								.map(Entry::getKey)
+    								.findFirst().get();
+        					
+        					attributes.put(dme.getEncodedName(), 
+            						new XAttributeLiteralImpl(dme.getEncodedName(), encodedValue, entry.getValue().getExtension()) );
+        				
+        				} else {
+        					if (isLong(entry.getValue().toString()))
+        						attributes.put(dme.getEncodedName(),
+        								new XAttributeDiscreteImpl(dme.getEncodedName(), Long.parseLong(entry.getValue().toString()), entry.getValue().getExtension()) );
+        					
+        					else if (isDouble(entry.getValue().toString()))
+        						attributes.put(dme.getEncodedName(),
+        								new XAttributeContinuousImpl(dme.getEncodedName(), Double.parseDouble(entry.getValue().toString()), entry.getValue().getExtension()) );
+        				}
+        			
+        			} else {
+        				attributes.put(entry.getKey(), entry.getValue());
+        			}
+        		}
+            	
+        		evt.setAttributes(attributes);
+        		
+        	} else {
+            	return null;
+            }
+        }
+    	
+    	return t;
+    }
+    
+    private boolean isLong(String s) {
+        try { 
+            Long.parseLong(s); 
+        } catch (NumberFormatException | NullPointerException e) { 
+            return false; 
+        }
+        
+        return true;
+    }
+    
+    private boolean isDouble(String s) {
+    	try {
+    		Double.parseDouble(s);
+    	} catch (NumberFormatException | NullPointerException e) { 
+            return false; 
+        }
+        
+        return true;
+    }
     
     public Map<String, String> getActivityMapping() {
 		return activityMapping;

@@ -66,39 +66,100 @@ public class AlloyCodeGenerator {
         this.usesSameConstraint = maxSameInstances > 0;
     }
 
-    public void Run(DeclareModel model, boolean negativeTraces, int intervalSplits, XTrace trace) throws DeclareParserException, GenerationException {
-
-        alloy = new StringBuilder(GetBase());
+    public void runLogGeneration(DeclareModel model, boolean negativeTraces, int intervalSplits, XTrace trace, String mode) throws DeclareParserException, GenerationException {
+        alloy = new StringBuilder(getBase());
         alloyConstraints = new ArrayList<>();
-        if (trace != null && maxTraceLength < trace.size()) {
+        
+        if (trace != null && maxTraceLength < trace.size())
             maxTraceLength = trace.size();
-        }
-
+        
         List<EnumeratedDataImpl> data = collectData(model, intervalSplits);
         numericData = fillNumericDataMap(data);
-        ExtendNumericData(getNumericExpressionsMap(model.getDataConstraints()));
+        extendNumericData(getNumericExpressionsMap(model.getDataConstraints()));
 
         generateActivities(model.getActivities());
-        GenerateEvents(maxTraceLength);
-        GenerateNextPredicate(maxTraceLength);
-        GenerateAfterPredicate(maxTraceLength);
-        GenerateDataBinding(model.getActivityToData(), model.getDataToActivity());
+        generateEvents(maxTraceLength);
+        generateNextPredicate(maxTraceLength, mode);
+        generateAfterPredicate(maxTraceLength, mode);
+        generateDataBinding(model.getActivityToData(), model.getDataToActivity(), mode);
+        
         if (vacuity)
             generateVacuity(model.getConstraints());
+        
         generateConstraints(model.getConstraints());
-        GenerateData(data, shuffleConstraints);
-        GenerateDataConstraints(model.getDataConstraints());
+        generateData(data, shuffleConstraints);
+        generateDataConstraints(model.getDataConstraints());
+        
         if (shuffleConstraints)
             Collections.shuffle(alloyConstraints);
+        
         if (writeConstraints)
-            AttachConstraints(negativeTraces);
-        GenerateTraceContent(trace, model);
+            attachConstraints(negativeTraces);
+        
+        if (mode.equals("log_generation"))
+        	generateTraceContent(trace, model);
+    }
+    
+    public void runConstraintChecker(DeclareModel model, Constraint c, boolean negativeTraces, boolean isData, DataConstraint dc) throws DeclareParserException, GenerationException {
+        alloy = new StringBuilder(getBase());
+        alloyConstraints = new ArrayList<>();
+        
+        // Add the current constraint in alloyConstraints array, will be size 1 but don't have to change other code.
+        generateActivities(model.getActivities());
+        generateEvents(maxTraceLength);
+        generateNextPredicate(maxTraceLength, "monitoring");
+        generateAfterPredicate(maxTraceLength, "monitoring");
+        
+        if (isData) {
+            List<EnumeratedDataImpl> data = collectData(model, 1);
+            numericData = fillNumericDataMap(data);
+            extendNumericData(getNumericExpressionsMap(model.getDataConstraints()));
+            generateDataBinding(model.getActivityToData(), model.getDataToActivity(), "monitoring");
+            generateData(data, false);
+            generateDataConstraints( List.of(dc) );
+        
+        } else {
+        	generateConstraints( List.of(c) );
+        }
+        
+        attachConstraints(negativeTraces);
+        // We should do the data gathering and stuff here.
+    }
+    
+    public void runConflictChecker(DeclareModel model, ArrayList<DataConstraint> listOfConstraints, boolean negativeTraces) throws DeclareParserException, GenerationException {
+        alloy = new StringBuilder(getBase());
+        alloyConstraints = new ArrayList<>();
+        
+        // Add the current constraint in alloyConstraints array, will be size 1 but don't have to change other code.
+        generateActivities(model.getActivities());
+        generateEvents(maxTraceLength);
+        generateNextPredicate(maxTraceLength, "monitoring");
+        generateAfterPredicate(maxTraceLength, "monitoring");
+        
+        List<DataConstraint> dcList = new ArrayList<>();
+        List<Constraint> cList = new ArrayList<>();
+        for (DataConstraint dc : listOfConstraints ) {
+            if (dc.getFunctions() == null) { // so that we would know that this is actually a data constraint not a usual constraint
+                Constraint c = new Constraint(dc.getName(), dc.getArgs(), dc.getStatement());
+                cList.add(c);
+            } else {
+                dcList.add(dc);
+            }
+        }
+        
+        generateConstraints(cList);
+        List<EnumeratedDataImpl> data = collectData(model, 1);
+        numericData = fillNumericDataMap(data);
+        extendNumericData(getNumericExpressionsMap(dcList));
+        generateDataBinding(model.getActivityToData(), model.getDataToActivity(), "monitoring");
+        generateData(data, false);
+        generateDataConstraints(dcList);
+        attachConstraints(negativeTraces);
     }
 
-    private void GenerateTraceContent(XTrace trace, DeclareModel model) throws DeclareParserException {
-        if (trace == null || trace.size() == 0) {
+    private void generateTraceContent(XTrace trace, DeclareModel model) throws DeclareParserException {
+        if (trace == null || trace.isEmpty())
             return;
-        }
 
         alloy.append("fact {\n");
         generateTraceFlow(trace, model);
@@ -110,9 +171,8 @@ public class AlloyCodeGenerator {
 
         for (XEvent event : trace) {
             XAttribute nameAttribute = event.getAttributes().get("concept:name");
-            if (nameAttribute == null) {
+            if (nameAttribute == null)
                 throw new DeclareParserException("Event name not found in " + event);
-            }
 
             String activityName = ((XAttributeLiteralImpl) nameAttribute).getValue();
             alloy.append(activityName).append(" = TE").append(index).append(".task\n");
@@ -120,20 +180,18 @@ public class AlloyCodeGenerator {
             for (String dataAttributeName : model.getActivityToData().getOrDefault(activityName, Collections.emptySet())) {
                 XAttribute attribute = event.getAttributes().get(dataAttributeName);
 
-                if (attribute == null) {
+                if (attribute == null)
                     alloy.append("__").append(dataAttributeName).append("__no_value").append(" = TE").append(index).append(".data & ").append(dataAttributeName).append("\n");
-                }
 
-                if (attribute instanceof XAttributeLiteralImpl &&
-                        model.getEnumeratedData().stream().anyMatch(i -> i.getType().equals(attribute.getKey()) && i.getValues().contains(((XAttributeLiteralImpl) attribute).getValue()))) {
+                if (attribute instanceof XAttributeLiteralImpl
+                			&& model.getEnumeratedData().stream().anyMatch(i -> i.getType().equals(attribute.getKey()) && i.getValues().contains(((XAttributeLiteralImpl) attribute).getValue())))
                     alloy.append(((XAttributeLiteralImpl) attribute).getValue()).append(" = TE").append(index).append(".data & ").append(attribute.getKey()).append("\n");
-                }
+                
 
                 if (attribute instanceof XAttributeDiscreteImpl) {
                     Optional<IntegerData> intData = model.getIntegerData().stream().filter(i -> i.getType().equals(attribute.getKey())).findAny();
-                    if (intData.isPresent()) {
+                    if (intData.isPresent())
                         alloy.append(getIntervalFor(intData.get(), ((XAttributeDiscreteImpl) attribute).getValue())).append(" = TE").append(index).append(".data & ").append(attribute.getKey()).append("\n");
-                    }
                 }
 
                 if (attribute instanceof XAttributeContinuousImpl) {
@@ -143,7 +201,7 @@ public class AlloyCodeGenerator {
                 }
             }
 
-            ++index;
+            index++;
         }
     }
 
@@ -164,26 +222,25 @@ public class AlloyCodeGenerator {
     }
 
     public List<EnumeratedDataImpl> collectData(DeclareModel model, int intervalSplits) {
-        List<EnumeratedDataImpl> data = new ArrayList<>(model.getEnumeratedData().size() +
-                model.getIntegerData().size() + model.getFloatData().size());
+        List<EnumeratedDataImpl> data = new ArrayList<>( model.getEnumeratedData().size()
+                										+ model.getIntegerData().size()
+                										+ model.getFloatData().size() );
 
-        for (EnumeratedData i : model.getEnumeratedData()) {
+        for (EnumeratedData i : model.getEnumeratedData())
             data.add(new EnumeratedDataImpl(i.getType(), i.getValues(), i.isRequired()));
-        }
 
-        for (IntegerData i : model.getIntegerData()) {
+        for (IntegerData i : model.getIntegerData())
             data.add(new IntegerDataImpl(i.getType(), i.getMin(), i.getMax(), intervalSplits, null, i.isRequired()));
-        }
 
-        for (FloatData i : model.getFloatData()) {
+        for (FloatData i : model.getFloatData())
             data.add(new FloatDataImpl(i.getType(), i.getMin(), i.getMax(), intervalSplits, null, i.isRequired()));
-        }
 
         return data;
     }
 
     public Map<String, NumericDataImpl> fillNumericDataMap(List<EnumeratedDataImpl> data) {
         Map<String, NumericDataImpl> map = new HashMap<>();
+        
         for (EnumeratedDataImpl item : data)
             if (item instanceof NumericDataImpl)
                 map.put(item.getType(), (NumericDataImpl) item);
@@ -207,7 +264,7 @@ public class AlloyCodeGenerator {
         return numericExpressions;
     }
 
-    private void AttachConstraints(boolean negativeTraces) {
+    private void attachConstraints(boolean negativeTraces) {
         List<String> alloyConstraintsValues = alloyConstraints.stream().map(Pair::getValue).collect(Collectors.toList());
         if (negativeTraces)
             alloy.append("fact {\n").append("(not ").append(String.join(") or not (", alloyConstraintsValues)).append(")\n}\n");
@@ -230,7 +287,7 @@ public class AlloyCodeGenerator {
         return map;
     }
 
-    private void GenerateDataConstraints(List<DataConstraint> dataConstraints) throws GenerationException, DeclareParserException {
+    private void generateDataConstraints(List<DataConstraint> dataConstraints) throws GenerationException, DeclareParserException {
         for (DataConstraint i : dataConstraints) {
             try {
                 alloy.append(gen.Generate(i, getRandomFunctionName(), numericData, alloyConstraints));
@@ -272,7 +329,7 @@ public class AlloyCodeGenerator {
         return "p" + RandomHelper.getNext();
     }
 
-    private void ExtendNumericData(Map<String, List<DataExpression>> numericExpressions) throws DeclareParserException, GenerationException {
+    private void extendNumericData(Map<String, List<DataExpression>> numericExpressions) throws DeclareParserException, GenerationException {
         for (NumericDataImpl d : numericData.values())
             if (numericExpressions.containsKey(d.getType()))
                 for (DataExpression i : numericExpressions.get(d.getType()))
@@ -307,38 +364,40 @@ public class AlloyCodeGenerator {
         throw new DeclareParserException("Unknown token " + token + "\n" + ex.toString());
     }
 
-    private void GenerateData(List<EnumeratedDataImpl> data, boolean shuffle) {
+    private void generateData(List<EnumeratedDataImpl> data, boolean shuffle) {
         if (shuffle)
             Collections.shuffle(data);
 
         for (EnumeratedDataImpl item : data) {
             if (item instanceof NumericDataImpl) {
-                GenerateNumericDataItem((NumericDataImpl) item, usesSameConstraint);
+                generateNumericDataItem((NumericDataImpl) item, usesSameConstraint);
                 continue;
             }
+            
             alloy.append("abstract sig ").append(item.getType()).append(" extends Payload {}\n");
             alloy.append("fact { all te: Event | (lone ").append(item.getType()).append(" & te.data)}\n");
 
             if (shuffle)
                 Collections.shuffle(item.getValues());
 
-            for (String value : item.getValues()) {
+            for (String value : item.getValues()) 
                 alloy.append("one sig ").append(value).append(" extends ").append(item.getType()).append("{}\n");
-            }
 
-            if (!item.isRequired()) {
+            if (!item.isRequired())
                 alloy.append("one sig ").append("__").append(item.getType()).append("__no_value").append(" extends ").append(item.getType()).append("{}\n");
-            }
         }
     }
 
-    private void GenerateNumericDataItem(NumericDataImpl item, boolean includeAmountOfPossibleValuesVariable) {
+    private void generateNumericDataItem(NumericDataImpl item, boolean includeAmountOfPossibleValuesVariable) {
         alloy.append("abstract sig ").append(item.getType()).append(" extends Payload {");
+        
         if (includeAmountOfPossibleValuesVariable)
             alloy.append("\n__amount: Int\n");
+        
         alloy.append("}\n");
 
         alloy.append("fact { all te: Event | (lone ").append(item.getType()).append(" & te.data) }\n");
+        
         if (includeAmountOfPossibleValuesVariable) {
             alloy.append("pred Single(pl: ").append(item.getType()).append(") {{pl.__amount=1}}\n");
             alloy.append("fun __Amount(pl: ").append(item.getType()).append("): one Int {{pl.__amount}}\n");
@@ -347,19 +406,18 @@ public class AlloyCodeGenerator {
         int limit = (int) Math.pow(2, bitwidth - 1);
         for (String value : item.getValues()) {
             if (includeAmountOfPossibleValuesVariable) {
-
-                int cnt = item.getMapping().get(value).getValueCount(limit);
+            	int cnt = item.getMapping().get(value).getValueCount(limit);
                 if (cnt < 0)
                     cnt = limit - 1;
                 alloy.append("one sig ").append(value).append(" extends ").append(item.getType()).append("{}{__amount=").append(cnt).append("}\n");
+            
             } else {
                 alloy.append("one sig ").append(value).append(" extends ").append(item.getType()).append("{}\n");
             }
         }
 
-        if (!item.isRequired()) {
+        if (!item.isRequired())
             alloy.append("one sig ").append("__").append(item.getType()).append("__no_value").append(" extends ").append(item.getType()).append("{}\n");
-        }
     }
 
     private void generateActivities(Set<Activity> tasks) {
@@ -371,8 +429,8 @@ public class AlloyCodeGenerator {
             alloy.append("one sig ").append(i.getName()).append(" extends Activity {}\n");
     }
 
-    private void GenerateEvents(int length) {
-        for (int i = 0; i < length; i++) {
+    private void generateEvents(int length) {
+        for (int i=0; i < length; i++) {
             if (i < minTraceLength)
                 alloy.append("one sig TE").append(i).append(" extends Event {}{not task=DummyActivity}\n");
             else
@@ -381,72 +439,145 @@ public class AlloyCodeGenerator {
     }
 
 
-    private void GenerateNextPredicate(int length) {
+    private void generateNextPredicate(int length, String mode) {
         alloy.append("pred Next(pre, next: Event){");
-        alloy.append("pre=TE0 and next=TE1");
-        for (int i = 2; i < length; i++) {
-            alloy.append(" or pre=TE").append(i - 1).append(" and next=TE").append(i);
-        }
-
-        alloy.append("}\n");
-    }
-
-    private void GenerateAfterPredicate(int length) {
-        alloy.append("pred After(b, a: Event){// b=before, a=after\n");
-        int middle = length / 2;
-        for (int i = 0; i < length - 1; ++i) {
-            if (i > 0) {
-                alloy.append(" or ");
-            }
-
-            alloy.append("b=TE").append(i).append(" and ");
-            if (i < middle) {
-                alloy.append("not (a=TE").append(i);
-                for (int j = 0; j < i; ++j) {
-                    alloy.append(" or a=TE").append(j);
-                }
-                alloy.append(")");
+        
+        if (mode.equals("monitoring")) {
+        	if (length == 1) {
+            	alloy.append("pre=TE0 and not next=TE0");
             } else {
-                alloy.append("(a=TE").append(length - 1);
-                for (int j = length - 2; j > i; --j) {
-                    alloy.append(" or a=TE").append(j);
-                }
-                alloy.append(")");
+            	alloy.append("pre=TE0 and next=TE1");
+    	        for (int i=2; i < length; i++)
+    	            alloy.append(" or pre=TE").append(i - 1).append(" and next=TE").append(i);
             }
+            
+        } else if (mode.equals("log_generation")) {
+        	alloy.append("pre=TE0 and next=TE1");
+	        for (int i=2; i < length; i++)
+	            alloy.append(" or pre=TE").append(i - 1).append(" and next=TE").append(i);
+        }
+        
+        alloy.append("}\n");
+    }
+
+    private void generateAfterPredicate(int length, String mode) {
+        alloy.append("pred After(b, a: Event){// b=before, a=after\n");
+        
+        if (mode.equals("monitoring")) {
+	        if (length == 1) {
+	        	alloy.append("b=TE0 and not a=TE0");
+	        	
+	        } else {
+		        int middle = length / 2;
+		        for (int i=0; i < length - 1; ++i) {
+		            if (i > 0)
+		                alloy.append(" or ");
+		
+		            alloy.append("b=TE").append(i).append(" and ");
+		            
+		            if (i < middle) {
+		                alloy.append("not (a=TE").append(i);
+		                for (int j=0; j < i; ++j)
+		                    alloy.append(" or a=TE").append(j);
+		            
+		            } else {
+		                alloy.append("(a=TE").append(length - 1);
+		                for (int j=length-2; j > i; --j)
+		                    alloy.append(" or a=TE").append(j);
+		            }
+		            
+		            alloy.append(")");
+		        }
+	        }
+        
+        } else if (mode.equals("log_generation")) {
+        	int middle = length / 2;
+	        for (int i=0; i < length - 1; ++i) {
+	            if (i > 0)
+	                alloy.append(" or ");
+	
+	            alloy.append("b=TE").append(i).append(" and ");
+	            
+	            if (i < middle) {
+	                alloy.append("not (a=TE").append(i);
+	                for (int j=0; j < i; ++j)
+	                    alloy.append(" or a=TE").append(j);
+	            
+	            } else {
+	                alloy.append("(a=TE").append(length - 1);
+	                for (int j=length-2; j > i; --j)
+	                    alloy.append(" or a=TE").append(j);
+	            }
+	            
+	            alloy.append(")");
+	        }
         }
 
         alloy.append("}\n");
     }
 
-    private void GenerateDataBinding(Map<String, Set<String>> activityToData, Map<String, Set<String>> dataToActivity) {
-        GenerateDataBinding(activityToData, dataToActivity, "Event");
+    private void generateDataBinding(Map<String, Set<String>> activityToData, Map<String, Set<String>> dataToActivity, String mode) {
+    	if (mode.equals("monitoring")) {
+    		for (String activity : activityToData.keySet()) {
+                alloy.append("fact { all te: Event | te.task = ")
+                        .append(activity)
+                        .append(" implies (one ")
+                        .append(String.join(" & te.data and one ", activityToData.get(activity)))
+                        .append(" & te.data")
+                        .append(")}\n");
+            }
+
+            for (String payload : dataToActivity.keySet()) {
+                alloy.append("fact { all te: Event | lone(").append(payload).append(" & te.data) }\n");
+                alloy.append("fact { all te: Event | some (")
+                        .append(payload)
+                        .append(" & te.data) implies te.task in (")
+                        .append(String.join(" + ", dataToActivity.get(payload)))
+                        .append(") }\n");
+            }
+    		
+    	} else if (mode.equals("log_generation")) {
+    		for (String activity : activityToData.keySet()) {
+                alloy.append("fact { all te: Event | te.task = ")
+                        .append(activity)
+                        .append(" implies (one ")
+                        .append(String.join(" & te.data and one ", activityToData.get(activity)))
+                        .append(" & te.data")
+                        .append(")}\n");
+            }
+
+            for (String payload : dataToActivity.keySet()) {
+                alloy.append("fact { all te: Event | some (")
+                        .append(payload)
+                        .append(" & te.data) implies te.task in (")
+                        .append(String.join(" + ", dataToActivity.get(payload)))
+                        .append(") }\n");
+            }
+    	}
     }
 
     public void generateDataBindingForQuerying(Map<String, Set<String>> activityToData, Map<String, Set<String>> dataToActivity) {
-        if (dataQueryParamPresent)
-            GenerateDataBinding(activityToData, dataToActivity, "QueryParam");
-    }
+        if (dataQueryParamPresent) {
+        	for (String activity : activityToData.keySet()) {
+                alloy.append("fact { all te: QueryParam | te.task = ")
+                        .append(activity)
+                        .append(" implies (one ")
+                        .append(String.join(" & te.data and one ", activityToData.get(activity)))
+                        .append(" & te.data")
+                        .append(")}\n");
+            }
 
-    private void GenerateDataBinding(Map<String, Set<String>> activityToData, Map<String, Set<String>> dataToActivity, String eventPlaceholderName) {
-        for (String activity : activityToData.keySet()) {
-            alloy.append("fact { all te: ").append(eventPlaceholderName).append(" | te.task = ")
-                    .append(activity)
-                    .append(" implies (one ")
-                    .append(String.join(" & te.data and one ", activityToData.get(activity)))
-                    .append(" & te.data")
-                    .append(")}\n");
-        }
-
-        for (String payload : dataToActivity.keySet()) {
-            alloy.append("fact { all te: ").append(eventPlaceholderName).append(" | some (")
-                    .append(payload)
-                    .append(" & te.data) implies te.task in (")
-                    .append(String.join(" + ", dataToActivity.get(payload)))
-                    .append(") }\n");
+            for (String payload : dataToActivity.keySet()) {
+                alloy.append("fact { all te: QueryParam | some (")
+                        .append(payload)
+                        .append(" & te.data) implies te.task in (")
+                        .append(String.join(" + ", dataToActivity.get(payload)))
+                        .append(") }\n");
+            }
         }
     }
 
-    // has to be called before GenerateDataBinding(..., QueryParam)
+    // has to be called before generateDataBindingForQuerying(...)
     public void generateQueryPlaceholder(Map<String, String> names, Set<String> dataParams) {
         dataQueryParamPresent = false;
         boolean taskQueryParamPresent = false;
@@ -486,7 +617,7 @@ public class AlloyCodeGenerator {
         }
     }
 
-    private String GetBase() {
+    private String getBase() {
         return "abstract sig Activity {}\n" +
                 "abstract sig Payload {}\n" +
                 "\n" +
