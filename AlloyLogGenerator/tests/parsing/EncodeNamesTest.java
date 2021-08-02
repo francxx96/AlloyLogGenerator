@@ -2,7 +2,6 @@ package parsing;
 
 import core.alloy.codegen.NameEncoder;
 import core.alloy.codegen.NameEncoder.DataMappingElement;
-import declare.DeclareParser;
 import declare.DeclareParserException;
 
 import org.apache.commons.lang3.StringUtils;
@@ -18,7 +17,6 @@ import java.util.Map;
 public class EncodeNamesTest {
     @Test
     public void testEncoding() {
-        DeclareParser parser = new DeclareParser();
         String declare = "activity microscopisch onderzoek - gekleurd en on\n" +
                 "activity sinus\n" +
                 "activity inwend.geneesk.  korte kaart kosten-out\n" +
@@ -57,7 +55,7 @@ public class EncodeNamesTest {
 
         
         try {
-        	NameEncoder encoder = new NameEncoder(parser);
+        	NameEncoder encoder = new NameEncoder();
 	        String encoded = encoder.encode(declare);
 			
 	        Map<String, String> allEncodings = new HashMap<>();

@@ -10,8 +10,6 @@ import java.util.List;
  * Created by Vasiliy on 2017-10-19.
  */
 public class StatementIdTest {
-    DeclareParser parser = new DeclareParser();
-
     List<String> tasks = Arrays.asList(
             "activity ApplyForTrip",
             "activity BookAccomodation",
@@ -75,12 +73,12 @@ public class StatementIdTest {
 
     private void testIsX(List<String> items, boolean task, boolean constraint, boolean data, boolean dataBinding, boolean dataConstraint, boolean traceAttribute) {
         for (String item : items) {
-            Assert.assertEquals(parser.isActivity(item), task);
-            Assert.assertEquals(parser.isConstraint(item), constraint);
-            Assert.assertEquals(parser.isData(item), data);
-            Assert.assertEquals(parser.isDataBinding(item), dataBinding);
-            Assert.assertEquals(parser.isDataConstraint(item), dataConstraint);
-            Assert.assertEquals(parser.isTraceAttribute(item), traceAttribute);
+            Assert.assertEquals(DeclareParser.isActivity(item), task);
+            Assert.assertEquals(DeclareParser.isConstraint(item), constraint);
+            Assert.assertEquals(DeclareParser.isData(item), data);
+            Assert.assertEquals(DeclareParser.isDataBinding(item), dataBinding);
+            Assert.assertEquals(DeclareParser.isDataConstraint(item), dataConstraint);
+            Assert.assertEquals(DeclareParser.isTraceAttribute(item), traceAttribute);
         }
     }
 

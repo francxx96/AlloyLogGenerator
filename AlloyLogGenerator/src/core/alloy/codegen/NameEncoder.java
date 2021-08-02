@@ -24,22 +24,20 @@ import org.deckfour.xes.model.impl.XAttributeMapImpl;
  * Created by Vasiliy on 2018-05-10.
  */
 public class NameEncoder {
-    private DeclareParser parser;
     
     private Map<String, String> activityMapping;
     private Map<String, String> traceAttributeMapping;
     private Set<DataMappingElement> dataMapping;
 
-    public NameEncoder(DeclareParser parser) {
-        this.parser = parser;
+    public NameEncoder() {
     }
 
     public String encode(String declare) throws DeclareParserException {
-    	String[] declareLines = parser.splitStatements(declare);
+    	String[] declareLines = DeclareParser.splitStatements(declare);
         
         List<String> dataLines = new ArrayList<>();
         for (String line : declareLines)
-        	if (parser.isData(line))
+        	if (DeclareParser.isData(line))
         		dataLines.add(line);
         
         String encodedDeclare = "";
@@ -50,7 +48,7 @@ public class NameEncoder {
         for (String line : declareLines) {
         	String encodedLine = "";
         	
-        	if (parser.isTraceAttribute(line)) {
+        	if (DeclareParser.isTraceAttribute(line)) {
     			String name = line.substring("trace ".length()).trim();
         		String encoding = RandomHelper.getName();
         		traceAttributeMapping.put(encoding, name);
@@ -58,7 +56,7 @@ public class NameEncoder {
     			encodedLine = "trace " + encoding;
     		
         	
-        	} else if (parser.isActivity(line)) {
+        	} else if (DeclareParser.isActivity(line)) {
         		String name = line.substring("activity ".length()).trim();
         		String encoding = RandomHelper.getName();
         		activityMapping.put(encoding, name);
@@ -66,7 +64,7 @@ public class NameEncoder {
     			encodedLine = "activity " + encoding;
         	
         	
-        	} else if (parser.isDataBinding(line)) {
+        	} else if (DeclareParser.isDataBinding(line)) {
         		line = line.substring(5);
         		
         		for (Map.Entry<String, String> e : activityMapping.entrySet()) {
@@ -102,7 +100,7 @@ public class NameEncoder {
         		}
         	
         		
-        	} else if (parser.isData(line)) {
+        	} else if (DeclareParser.isData(line)) {
         		for (DataMappingElement dme : dataMapping)
         			if (line.startsWith(dme.getOriginalName()+": ")) {
         				encodedLine = dme.getEncodedName() + ": " + String.join(", ", dme.getValuesMapping().keySet());
@@ -110,7 +108,7 @@ public class NameEncoder {
         			}
         	
         	
-        	} else if (parser.isDataConstraint(line)) {
+        	} else if (DeclareParser.isDataConstraint(line)) {
         		// Encoding templates of the data constraint
             	Pattern templatePattern = Pattern.compile(".*\\[.*\\]\\s*");
             	Matcher mTempl = templatePattern.matcher(line);
@@ -147,7 +145,7 @@ public class NameEncoder {
             	}
         	
         	
-        	} else if (parser.isConstraint(line)) {
+        	} else if (DeclareParser.isConstraint(line)) {
         		continue;	// ???????????????????????????????????
         	}
         	

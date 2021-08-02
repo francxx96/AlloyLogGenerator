@@ -123,31 +123,31 @@ public class DeclareParser {
         return constraints;
     }
 
-    public boolean isActivity(String line) {
+    public static boolean isActivity(String line) {
         return line.startsWith("activity ");
     }
 
-    public boolean isTraceAttribute(String line) {
+    public static boolean isTraceAttribute(String line) {
         return line.startsWith("trace ");
     }
 
-    public boolean isData(String line) {
+    public static boolean isData(String line) {
     	return line.matches(".+:\\s+(((integer|float)\\s+between\\s+\\d+(\\.\\d+)?\\s+and\\s+\\d+(\\.\\d+)?)|((\\S+,\\s+)*\\S+))\\s*") && !isTraceAttribute(line) && !isDataBinding(line);
     }
 
-    public boolean isDataBinding(String line) {
+    public static boolean isDataBinding(String line) {
         return line.startsWith("bind ");
     }
 
-    public boolean isConstraint(String line) {
+    public static boolean isConstraint(String line) {
         return line.contains("[") && !isDataConstraint(line);
     }
 
-    public boolean isDataConstraint(String line) {
+    public static boolean isDataConstraint(String line) {
         return line.matches(".+\\[.+\\]\\s*(\\|[^\\|\\n\\r]*)+");	// ".+\\[.+\\]\\s*(\\|[^\\|\\n\\r]*){0,2}"
     }
 
-    public String[] splitStatements(String code) {
+    public static String[] splitStatements(String code) {
         return code.replace("\r\n", "\n").split("\n");
     }
 

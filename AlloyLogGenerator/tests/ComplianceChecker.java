@@ -85,7 +85,7 @@ public class ComplianceChecker {
                 "\t</trace>\n" +
                 "</log>\n").getBytes());
 
-        boolean compliant = Evaluator.checkCompliace(
+        boolean compliant = Evaluator.checkCompliance(
                 0,
                 declare,
                 "./../data/temp.als",
@@ -119,7 +119,7 @@ public class ComplianceChecker {
                 "\t</trace>\n" +
                 "</log>\n").getBytes());
 
-        List<Statement> violations = Evaluator.checkCompliace(
+        List<Statement> violations = Evaluator.checkCompliance(
                 0,
                 declare,
                 "./../data/temp.als",
@@ -178,7 +178,7 @@ public class ComplianceChecker {
                 "\t</trace>\n" +
                 "</log>\n").getBytes());
 
-        List<Statement> violations = Evaluator.checkCompliace(
+        List<Statement> violations = Evaluator.checkCompliance(
                 0,
                 declare,
                 "./../data/temp.als",
@@ -233,7 +233,7 @@ public class ComplianceChecker {
                 "\t</trace>\n" +
                 "</log>\n").getBytes());
 
-        List<Statement> violations = Evaluator.checkCompliace(
+        List<Statement> violations = Evaluator.checkCompliance(
                 0,
                 declare,
                 "./../data/temp.als",
@@ -288,7 +288,7 @@ public class ComplianceChecker {
                 "\t</trace>\n" +
                 "</log>\n").getBytes());
 
-        List<Statement> violations = Evaluator.checkCompliace(
+        List<Statement> violations = Evaluator.checkCompliance(
                 0,
                 declare,
                 "./../data/temp.als",
@@ -342,7 +342,7 @@ public class ComplianceChecker {
                 "\t</trace>\n" +
                 "</log>\n").getBytes());
 
-        List<Statement> violations = Evaluator.checkCompliace(
+        List<Statement> violations = Evaluator.checkCompliance(
                 0,
                 declare,
                 "./../data/temp.als",
@@ -376,7 +376,7 @@ public class ComplianceChecker {
                 "\t</trace>\n" +
                 "</log>\n").getBytes());
 
-        List<Statement> violations = Evaluator.checkCompliace(
+        List<Statement> violations = Evaluator.checkCompliance(
                 0,
                 declare,
                 "./../data/temp.als",

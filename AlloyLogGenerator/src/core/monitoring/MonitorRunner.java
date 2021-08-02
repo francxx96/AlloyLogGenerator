@@ -43,17 +43,16 @@ public class MonitorRunner {
     public void setModel(String stringModel) throws DeclareParserException {
         String modelWithDummyStart = "activity complete\n" + stringModel;
         
-        DeclareParser modelParser = new DeclareParser();
-        
-        encoder = new NameEncoder(modelParser);
+        encoder = new NameEncoder();
         if (Global.encodeNames)
         	modelWithDummyStart = encoder.encode(modelWithDummyStart);
         
+        DeclareParser modelParser = new DeclareParser();
         model = modelParser.parse(modelWithDummyStart);
         
         // We setModel in the constraintChecker
         constraintChecker.setModel(model);
-        //constraintChecker.setEncodings(encoder);
+        //constraintChecker.setEncodings(encoder);  // Used only for printing 
         constraintChecker.setConstraints(model.getConstraints());
         constraintChecker.setDataConstraints(model.getDataConstraints());
         constraintChecker.setAllConstraintArr();
@@ -93,7 +92,6 @@ public class MonitorRunner {
 					.findFirst().get();
             
             if (XConceptExtension.instance().extractName(e).equals(encodedDummyEvent)) {
-            //if (XConceptExtension.instance().extractName(e).equals("complete")) {
                 oneTrace.add(e);
                 constraintChecker.setTrace(oneTrace);
                 if (conflict)
@@ -155,7 +153,7 @@ public class MonitorRunner {
             
         } catch (Throwable err) {
             err.printStackTrace();
-            return "nothing";
+            return null;
         }
     }
 }

@@ -127,7 +127,7 @@ public class Evaluator {
             List<Statement>[] results = new List[log.size()];
             int i = 0;
             for (XTrace trace : log) {
-                results[i] = Evaluator.checkCompliace(
+                results[i] = Evaluator.checkCompliance(
                         config.maxLength,
                         declare,
                         config.alsFilename,
@@ -281,10 +281,11 @@ public class Evaluator {
 
         int bitwidth = 5;
 
-        DeclareParser parser = new DeclareParser();
-        NameEncoder encoder = new NameEncoder(parser);
+        NameEncoder encoder = new NameEncoder();
         if (Global.encodeNames)
             declare = encoder.encode(declare);
+        
+        DeclareParser parser = new DeclareParser();
         DeclareModel model = parser.parse(declare);
         AlloyCodeGenerator gen = new AlloyCodeGenerator(maxTraceLength, minTraceLength, bitwidth, maxSameInstances, vacuity, shuffleConstraints, true);
         gen.runLogGeneration(model, negativeTraces, intervalSplits, trace, "log_generation");
@@ -304,7 +305,7 @@ public class Evaluator {
     }
 
     // returns List of violated statements
-    public static List<Statement> checkCompliace(int maxTraceLength,
+    public static List<Statement> checkCompliance(int maxTraceLength,
                                                  String declare,
                                                  String alsFilename,
                                                  boolean vacuity,
