@@ -44,8 +44,10 @@ public class MonitorRunner {
         String modelWithDummyStart = "activity complete\n" + stringModel;
         
         encoder = new NameEncoder();
-        if (Global.encodeNames)
-        	modelWithDummyStart = encoder.encode(modelWithDummyStart);
+        if (Global.encodeNames) {
+        	encoder.createDeclMapping(modelWithDummyStart);
+        	modelWithDummyStart = encoder.encodeDeclModel(modelWithDummyStart);
+        }
         
         DeclareParser modelParser = new DeclareParser();
         model = modelParser.parse(modelWithDummyStart);

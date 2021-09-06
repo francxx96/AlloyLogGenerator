@@ -282,8 +282,10 @@ public class Evaluator {
         int bitwidth = 5;
 
         NameEncoder encoder = new NameEncoder();
-        if (Global.encodeNames)
-            declare = encoder.encode(declare);
+        if (Global.encodeNames) {
+        	encoder.createDeclMapping(declare);
+            declare = encoder.encodeDeclModel(declare);
+        }
         
         DeclareParser parser = new DeclareParser();
         DeclareModel model = parser.parse(declare);

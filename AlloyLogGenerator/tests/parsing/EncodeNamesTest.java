@@ -56,7 +56,8 @@ public class EncodeNamesTest {
         
         try {
         	NameEncoder encoder = new NameEncoder();
-	        String encoded = encoder.encode(declare);
+        	encoder.createDeclMapping(declare);
+	        String encoded = encoder.encodeDeclModel(declare);
 			
 	        Map<String, String> allEncodings = new HashMap<>();
 	        allEncodings.putAll(encoder.getTraceAttributeMapping());

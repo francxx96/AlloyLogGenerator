@@ -14,6 +14,7 @@ import org.deckfour.xes.extension.std.XConceptExtension;
 import org.deckfour.xes.model.XAttribute;
 import org.deckfour.xes.model.XAttributeMap;
 import org.deckfour.xes.model.XEvent;
+import org.deckfour.xes.model.XLog;
 import org.deckfour.xes.model.XTrace;
 import org.deckfour.xes.model.impl.XAttributeContinuousImpl;
 import org.deckfour.xes.model.impl.XAttributeDiscreteImpl;
@@ -30,9 +31,66 @@ public class NameEncoder {
     private Set<DataMappingElement> dataMapping;
 
     public NameEncoder() {
+    	activityMapping = new HashMap<>();
+        traceAttributeMapping = new HashMap<>();
+        dataMapping = new HashSet<>();
     }
 
-    public String encode(String declare) throws DeclareParserException {
+    public void createLogMapping(XLog xlog) {
+    	
+    	for (XTrace t : xlog) {
+    		for (XAttribute traceAtt : t.getAttributes().values()) {
+        		if (!traceAtt.getKey().equals(XConceptExtension.KEY_NAME)) {
+        			String encoding = RandomHelper.getName();
+        			traceAttributeMapping.put(encoding, traceAtt.toString());
+        		}
+        	}
+        	
+        	for (XEvent event : t) {
+        		for (XAttribute eventAtt : event.getAttributes().values()) {
+        			
+        			if (eventAtt.getKey().equals(XConceptExtension.KEY_NAME) ) {
+        				if( !activityMapping.containsValue(eventAtt.toString()) ) {
+	        				String encoding = RandomHelper.getName();
+	        				activityMapping.put(encoding, eventAtt.toString());
+        				}
+        				
+        			} else if (!eventAtt.getKey().equals("lifecycle:transition") 
+        					&& !eventAtt.getKey().equals("time:timestamp")) {
+        				
+        				Optional<DataMappingElement> optElem = dataMapping.stream()
+    							.filter(item -> item.getOriginalName().equals(eventAtt.getKey()))
+    							.findAny();
+        				
+        				if (optElem.isPresent()) {
+        					DataMappingElement elem = optElem.get();
+        					elem.addValues( Set.of(eventAtt.toString()) );
+        					
+        				} else {
+        					
+        					if (eventAtt instanceof XAttributeLiteralImpl) {
+        						DataMappingElement newElem = new DataMappingElement(DataMappingElement.Type.LITERAL, eventAtt.getKey());
+        						newElem.addValues(Set.of(eventAtt.toString()));
+            					dataMapping.add(newElem);
+            					
+        					} else if (eventAtt instanceof XAttributeDiscreteImpl) {
+        						DataMappingElement newElem = new DataMappingElement(DataMappingElement.Type.DISCRETE, eventAtt.getKey());
+        						newElem.addValues(Set.of(eventAtt.toString()));
+            					dataMapping.add(newElem);
+            					
+        					} else if (eventAtt instanceof XAttributeContinuousImpl) {
+        						DataMappingElement newElem = new DataMappingElement(DataMappingElement.Type.CONTINUOUS, eventAtt.getKey());
+        						newElem.addValues(Set.of(eventAtt.toString()));
+            					dataMapping.add(newElem);
+        					}
+        				}
+        			}
+        		}
+        	}
+    	}
+    }
+    
+    public void createDeclMapping(String declare) throws DeclareParserException {
     	String[] declareLines = DeclareParser.splitStatements(declare);
         
         List<String> dataLines = new ArrayList<>();
@@ -40,32 +98,28 @@ public class NameEncoder {
         	if (DeclareParser.isData(line))
         		dataLines.add(line);
         
-        String encodedDeclare = "";
-        activityMapping = new HashMap<>();
-        traceAttributeMapping = new HashMap<>();
-        dataMapping = new HashSet<>();
-        
         for (String line : declareLines) {
-        	String encodedLine = "";
         	
         	if (DeclareParser.isTraceAttribute(line)) {
     			String name = line.substring("trace ".length()).trim();
-        		String encoding = RandomHelper.getName();
-        		traceAttributeMapping.put(encoding, name);
     			
-    			encodedLine = "trace " + encoding;
+    			if (!traceAttributeMapping.values().contains(name)) {
+	        		String encoding = RandomHelper.getName();
+	        		traceAttributeMapping.put(encoding, name);
+    			}
     		
         	
         	} else if (DeclareParser.isActivity(line)) {
         		String name = line.substring("activity ".length()).trim();
-        		String encoding = RandomHelper.getName();
-        		activityMapping.put(encoding, name);
-    			
-    			encodedLine = "activity " + encoding;
+        		
+        		if (!activityMapping.values().contains(name)) {
+        			String encoding = RandomHelper.getName();
+        			activityMapping.put(encoding, name);
+        		}
         	
         	
         	} else if (DeclareParser.isDataBinding(line)) {
-        		line = line.substring(5);
+        		line = line.substring("bind ".length()).trim();
         		
         		for (Map.Entry<String, String> e : activityMapping.entrySet()) {
         			String actName = e.getValue();
@@ -81,14 +135,104 @@ public class NameEncoder {
         					for (String name : trueNames) {	//for (String possibleName : possibleDataNames) {
         						if (dl.startsWith(name+": ")) {
     								//trueNames.add(possibleName);
-        							List<String> values = Arrays.asList( dl.substring((name+": ").length()).split(", ") );
+        							Set<String> values = new HashSet<>( Arrays.asList( dl.substring((name+": ").length()).split(", ") ) );
     								values.forEach(value -> { value.trim(); });
-    								DataMappingElement payload = new DataMappingElement(name, new HashSet<>(values));
-    								dataMapping.add(payload);
+    								
+    								Optional<DataMappingElement> optElem = dataMapping.stream()
+    														.filter(item -> item.getOriginalName().equals(name))
+    														.findAny();
+
+    								if (optElem.isPresent()) {
+    									DataMappingElement elem = optElem.get();
+    									
+    									if (values.size() == 1
+        										&& values.iterator().next().matches("(integer|float) between \\d+(\\.\\d+)? and \\d+(\\.\\d+)?")) {
+        									
+        									String[] split = values.iterator().next().split(" ");
+        									values.clear();
+        									values.add(split[2]);
+        									values.add(split[4]);
+        								}
+    									
+    									elem.addValues(values);
+    								
+    								} else {
+    									DataMappingElement newElem;
+    								
+    									if (values.size() == 1) {
+    										String singleValue = values.iterator().next();
+	    									
+    										if (singleValue.matches("float between \\d+(\\.\\d+)? and \\d+(\\.\\d+)?")) {
+	    										newElem = new DataMappingElement(DataMappingElement.Type.CONTINUOUS, name);
+	    										String[] split = singleValue.split(" ");
+	    										newElem.addValues(Set.of(split[2], split[4]));
+	    										
+	    									} else if (singleValue.matches("integer between \\d+ and \\d+")) {
+	    										newElem = new DataMappingElement(DataMappingElement.Type.DISCRETE, name);
+	    										String[] split = singleValue.split(" ");
+	    										newElem.addValues(Set.of(split[2], split[4]));
+	    										
+	    									} else {
+	    										newElem = new DataMappingElement(DataMappingElement.Type.LITERAL, name);
+	    										newElem.addValues(values);
+	    									}
+	    								
+	    								} else {
+	    									newElem = new DataMappingElement(DataMappingElement.Type.LITERAL, name);
+											newElem.addValues(values);
+	    								}
+	    								
+	    								dataMapping.add(newElem);
+    								}
         						}
         					}
         				}
-    					
+        					
+        				break;
+        			}
+        		}
+        	}
+        }
+    }
+    
+    public String encodeDeclModel(String declare) throws DeclareParserException {
+    	String[] declareLines = DeclareParser.splitStatements(declare);
+        
+        List<String> dataLines = new ArrayList<>();
+        for (String line : declareLines)
+        	if (DeclareParser.isData(line))
+        		dataLines.add(line);
+        
+        String encodedDeclare = "";
+        
+        for (String line : declareLines) {
+        	String encodedLine = "";
+        	
+        	if (DeclareParser.isTraceAttribute(line)) {
+        		String name = line.substring("trace ".length()).trim();
+        		
+        		for (Map.Entry<String, String> entry : traceAttributeMapping.entrySet())
+        			if ( name.equals(entry.getValue()) )
+        				encodedLine = "trace " + entry.getKey();
+        	
+        	
+        	} else if (DeclareParser.isActivity(line)) {
+        		String name = line.substring("activity ".length()).trim();
+        		
+        		for (Map.Entry<String, String> entry : activityMapping.entrySet())
+        			if ( name.equals(entry.getValue()) )
+        				encodedLine = "activity " + entry.getKey();
+    			
+        	
+        	} else if (DeclareParser.isDataBinding(line)) {
+        		line = line.substring("bind ".length()).trim();
+        		
+        		for (Map.Entry<String, String> e : activityMapping.entrySet()) {
+        			String actName = e.getValue();
+        			if (line.startsWith(actName+": ")) {
+        				
+        				List<String> trueNames = Arrays.asList(line.substring((actName+": ").length()).split(",\\s+"));
+        				
         				List<String> trueEncodings = new ArrayList<>();
         				for (DataMappingElement dme : dataMapping)
         					if (trueNames.contains(dme.getOriginalName()))
@@ -152,7 +296,7 @@ public class NameEncoder {
         	encodedDeclare += encodedLine.isEmpty() ? "" : encodedLine + "\n" ;
         }
         
-        return encodedDeclare;
+    	return encodedDeclare;
     }
     
     private String encodeCondition(String condition) throws DeclareParserException {
@@ -254,7 +398,7 @@ public class NameEncoder {
     		} else {
     			String attributeValue, encodedValue;
     			
-    			if (longestAttribute.isNumeric()) {
+    			if (longestAttribute.getType() != DataMappingElement.Type.LITERAL) {
     				Pattern numPattern = Pattern.compile("-?\\d+(\\.\\d+)?");
     				Matcher m = numPattern.matcher(reducedCondition);
     				m.find();
@@ -349,7 +493,7 @@ public class NameEncoder {
     	return values;
     }
     
-    /*
+    /* === FRANCESCO ===
      * With this part I tried to improve the name extraction from .decl files by overcoming the limitations in names,
      * e.g. the fact that only names without ", ", ": " and "|" char sequences are allowed.
      * But it is incomplete...
@@ -411,7 +555,30 @@ public class NameEncoder {
         						.filter(item -> item.getOriginalName().equals(entry.getKey()))
         						.findFirst().get();
         				
-        				if (!dme.isNumeric()) {
+        				switch (dme.getType()) {
+						case CONTINUOUS:
+							attributes.put(dme.getEncodedName(),
+    								new XAttributeContinuousImpl(dme.getEncodedName(), Double.parseDouble(entry.getValue().toString()), entry.getValue().getExtension()) );
+							break;
+						
+						case DISCRETE:
+							attributes.put(dme.getEncodedName(),
+    								new XAttributeDiscreteImpl(dme.getEncodedName(), Long.parseLong(entry.getValue().toString()), entry.getValue().getExtension()) );
+							break;
+						
+						case LITERAL:
+							String encodedValue = dme.getValuesMapping().entrySet().stream()
+											.filter(e -> e.getValue().equals(entry.getValue().toString()))
+											.map(Entry::getKey)
+											.findFirst().get();
+					
+							attributes.put(dme.getEncodedName(), 
+    						new XAttributeLiteralImpl(dme.getEncodedName(), encodedValue, entry.getValue().getExtension()) );
+							
+							break;
+						}
+        				/*
+        				if (dme.getType() == DataMappingElement.Type.LITERAL) {
         					String encodedValue = dme.getValuesMapping().entrySet().stream()
     								.filter(e -> e.getValue().equals(entry.getValue().toString()))
     								.map(Entry::getKey)
@@ -429,6 +596,7 @@ public class NameEncoder {
         						attributes.put(dme.getEncodedName(),
         								new XAttributeContinuousImpl(dme.getEncodedName(), Double.parseDouble(entry.getValue().toString()), entry.getValue().getExtension()) );
         				}
+        				*/
         			
         			} else {
         				attributes.put(entry.getKey(), entry.getValue());
@@ -445,6 +613,7 @@ public class NameEncoder {
     	return t;
     }
     
+    /*
     private boolean isLong(String s) {
         try { 
             Long.parseLong(s); 
@@ -464,7 +633,7 @@ public class NameEncoder {
         
         return true;
     }
-    
+    */
     public Map<String, String> getActivityMapping() {
 		return activityMapping;
 	}
@@ -477,29 +646,31 @@ public class NameEncoder {
 		return dataMapping;
 	}
 
-	public class DataMappingElement {
-    	String originalName;
-    	String encodedName;
-    	Map<String, String> valuesMapping;
-    	boolean isNumeric;
+	public static class DataMappingElement {
     	
-    	public DataMappingElement(String originalName, Set<String> values) {
+		public enum Type {LITERAL, DISCRETE, CONTINUOUS}
+		
+		Type type;
+		String originalName;
+    	String encodedName;
+    	Set<String> numericValues;
+    	Map<String, String> literalValuesMapping;
+    	
+    	public DataMappingElement(Type type, String originalName) { //, Set<String> values) {
+    		this.type = type;
     		this.originalName = originalName;
     		this.encodedName = RandomHelper.getName();
-    		this.valuesMapping = new HashMap<>();
     		
-    		if (values.size() == 1 && values.iterator().next().matches("(integer|float) between \\d+(\\.\\d+)? and \\d+(\\.\\d+)?")) {
-    			this.valuesMapping.put(values.iterator().next(), values.iterator().next());
-    			this.isNumeric = true;
-    			
-    		} else {
-    			for (String val : values)
-        			this.valuesMapping.put(RandomHelper.getName(), val);
-    			
-    			this.isNumeric = false;
-    		}
+    		if (this.type == Type.LITERAL)
+    			this.literalValuesMapping = new HashMap<>();
+    		else
+    			this.numericValues = new HashSet<>();
     	}
-
+    	
+    	public Type getType() {
+    		return type;
+    	}
+    	
 		public String getOriginalName() {
 			return originalName;
 		}
@@ -509,13 +680,53 @@ public class NameEncoder {
 		}
 
 		public Map<String, String> getValuesMapping() {
-			return valuesMapping;
+    		Map<String, String> output = new HashMap<>();
+
+			switch (type) {
+			case CONTINUOUS: {
+				OptionalDouble min = numericValues.stream().mapToDouble(num -> Double.parseDouble(num)).min();
+				OptionalDouble max = numericValues.stream().mapToDouble(num -> Double.parseDouble(num)).max();
+				
+				if (min.isPresent() && max.isPresent())
+					output.put("float between " + min.getAsDouble() + " and " + max.getAsDouble(), "float between " + min.getAsDouble() + " and " + max.getAsDouble());
+				
+				break;
+			}
+			
+			case DISCRETE: {
+				OptionalInt min = numericValues.stream().mapToInt(num -> Integer.parseInt(num)).min();
+				OptionalInt max = numericValues.stream().mapToInt(num -> Integer.parseInt(num)).max();
+				
+				if (min.isPresent() && max.isPresent())
+					output.put("integer between " + min.getAsInt() + " and " + max.getAsInt(), "integer between " + min.getAsInt() + " and " + max.getAsInt());
+				
+				break;
+			}
+			
+			case LITERAL:
+				output = literalValuesMapping;
+				break;
+			}
+			
+			return output;
 		}
 		
-		public boolean isNumeric() {
-			return isNumeric;
+		public void addValues(Set<String> values) {
+			switch (type) {
+			case CONTINUOUS:
+			case DISCRETE:
+				this.numericValues.addAll(values);
+				break;
+				
+			case LITERAL:
+				values.forEach(val -> {
+					if (!literalValuesMapping.values().contains(val))
+						literalValuesMapping.put(RandomHelper.getName(), val);
+				});        			
+				break;
+			}
 		}
-
+		
 		@Override
 		public int hashCode() {
 			final int prime = 31;
