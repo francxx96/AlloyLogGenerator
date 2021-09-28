@@ -303,6 +303,9 @@ public class NameEncoder {
     	String encodedCondition = "";
     	Pattern parenthesesPattern = Pattern.compile("(?=\\()(?:(?=.*?\\((?!.*?\\1)(.*\\)(?!.*\\2).*))(?=.*?\\)(?!.*?\\2)(.*)).)+?.*?(?=\\1)[^(]*(?=\\2$)");
     	
+    	if (condition.matches("\\d+,\\d+,\\w")) // Time conditions will be left as they are
+    		return condition;
+    	
     	String lastFound = "Logical Operator";
     	while(!condition.isBlank()) {
     		condition = condition.trim();

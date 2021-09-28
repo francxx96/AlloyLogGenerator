@@ -90,7 +90,7 @@ public class TraceAlloyCode {
 
     private String getIntervalFor(FloatData floatData, double attributeValue) throws DeclareParserException {
         NumericDataImpl numericData = this.numericData.get(floatData.getType());
-        return numericData.getMapping().entrySet().stream().filter(i -> ((FloatInterval) i.getValue()).isIn((int) attributeValue)).map(Map.Entry::getKey).findAny()
+        return numericData.getMapping().entrySet().stream().filter(i -> ((FloatInterval) i.getValue()).isIn((float) attributeValue)).map(Map.Entry::getKey).findAny()
                 .orElseThrow(() -> new DeclareParserException("no interval for " + floatData.getType() + " = " + attributeValue));
     }
 }
