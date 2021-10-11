@@ -664,7 +664,7 @@ public class AlloyCodeGenerator {
                 "}\n" +
                 "\n" +
                 "pred Absence(taskA: Activity, n: Int) {\n" +
-                "\t#{ te: Event | taskA = te.task } <= n\n" +
+                "\t#{ te: Event | taskA = te.task } < n\n" +
                 "}\n" +
                 "\n" +
                 "pred Exactly(taskA: Activity, n: Int) {\n" +
