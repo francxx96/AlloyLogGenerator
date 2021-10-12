@@ -11,6 +11,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.deckfour.xes.extension.std.XConceptExtension;
+import org.deckfour.xes.extension.std.XLifecycleExtension;
+import org.deckfour.xes.extension.std.XTimeExtension;
 import org.deckfour.xes.model.XAttribute;
 import org.deckfour.xes.model.XAttributeMap;
 import org.deckfour.xes.model.XEvent;
@@ -55,8 +57,8 @@ public class NameEncoder {
 	        				activityMapping.put(encoding, eventAtt.toString());
         				}
         				
-        			} else if (!eventAtt.getKey().equals("lifecycle:transition") 
-        					&& !eventAtt.getKey().equals("time:timestamp")) {
+        			} else if (!eventAtt.getKey().equals(XLifecycleExtension.KEY_TRANSITION) 
+        					&& !eventAtt.getKey().equals(XTimeExtension.KEY_TIMESTAMP)) {
         				
         				Optional<DataMappingElement> optElem = dataMapping.stream()
     							.filter(item -> item.getOriginalName().equals(eventAtt.getKey()))
@@ -580,26 +582,6 @@ public class NameEncoder {
 							
 							break;
 						}
-        				/*
-        				if (dme.getType() == DataMappingElement.Type.LITERAL) {
-        					String encodedValue = dme.getValuesMapping().entrySet().stream()
-    								.filter(e -> e.getValue().equals(entry.getValue().toString()))
-    								.map(Entry::getKey)
-    								.findFirst().get();
-        					
-        					attributes.put(dme.getEncodedName(), 
-            						new XAttributeLiteralImpl(dme.getEncodedName(), encodedValue, entry.getValue().getExtension()) );
-        				
-        				} else {
-        					if (isLong(entry.getValue().toString()))
-        						attributes.put(dme.getEncodedName(),
-        								new XAttributeDiscreteImpl(dme.getEncodedName(), Long.parseLong(entry.getValue().toString()), entry.getValue().getExtension()) );
-        					
-        					else if (isDouble(entry.getValue().toString()))
-        						attributes.put(dme.getEncodedName(),
-        								new XAttributeContinuousImpl(dme.getEncodedName(), Double.parseDouble(entry.getValue().toString()), entry.getValue().getExtension()) );
-        				}
-        				*/
         			
         			} else {
         				attributes.put(entry.getKey(), entry.getValue());
@@ -616,27 +598,6 @@ public class NameEncoder {
     	return t;
     }
     
-    /*
-    private boolean isLong(String s) {
-        try { 
-            Long.parseLong(s); 
-        } catch (NumberFormatException | NullPointerException e) { 
-            return false; 
-        }
-        
-        return true;
-    }
-    
-    private boolean isDouble(String s) {
-    	try {
-    		Double.parseDouble(s);
-    	} catch (NumberFormatException | NullPointerException e) { 
-            return false; 
-        }
-        
-        return true;
-    }
-    */
     public Map<String, String> getActivityMapping() {
 		return activityMapping;
 	}

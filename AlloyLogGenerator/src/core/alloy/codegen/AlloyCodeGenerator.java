@@ -25,6 +25,7 @@ import declare.lang.data.EnumeratedData;
 import declare.lang.data.FloatData;
 import declare.lang.data.IntegerData;
 import org.apache.commons.lang3.tuple.Pair;
+import org.deckfour.xes.extension.std.XConceptExtension;
 import org.deckfour.xes.model.XAttribute;
 import org.deckfour.xes.model.XEvent;
 import org.deckfour.xes.model.XTrace;
@@ -170,11 +171,10 @@ public class AlloyCodeGenerator {
         int index = 0;
 
         for (XEvent event : trace) {
-            XAttribute nameAttribute = event.getAttributes().get("concept:name");
-            if (nameAttribute == null)
+        	String activityName = XConceptExtension.instance().extractName(event);
+            if (activityName == null || activityName ==  "") 
                 throw new DeclareParserException("Event name not found in " + event);
-
-            String activityName = ((XAttributeLiteralImpl) nameAttribute).getValue();
+            
             alloy.append(activityName).append(" = TE").append(index).append(".task\n");
 
             for (String dataAttributeName : model.getActivityToData().getOrDefault(activityName, Collections.emptySet())) {

@@ -4,10 +4,11 @@ import core.models.declare.data.NumericDataImpl;
 import core.models.intervals.FloatInterval;
 import core.models.intervals.IntegerInterval;
 import declare.DeclareParserException;
-import declare.lang.Activity;
 import declare.DeclareModel;
 import declare.lang.data.FloatData;
 import declare.lang.data.IntegerData;
+
+import org.deckfour.xes.extension.std.XConceptExtension;
 import org.deckfour.xes.model.XAttribute;
 import org.deckfour.xes.model.XEvent;
 import org.deckfour.xes.model.XTrace;
@@ -45,11 +46,12 @@ public class TraceAlloyCode {
     public void traceGenRun(XTrace t, DeclareModel model, boolean data) throws DeclareParserException {
         int index = 0;
         for (XEvent e : t){
-            String name = getEventName(e);
-            if (name == null || name ==  "") {
-                throw new DeclareParserException("Event name not found" + e);
-            }
-            activitiesCode.append(getEventName(e) + " = TE" + index + ".task" + "\n");
+            String name = XConceptExtension.instance().extractName(e);
+            if (name == null || name ==  "") 
+                throw new DeclareParserException("Event name not found in " + e);
+            
+            activitiesCode.append(name + " = TE" + index + ".task" + "\n");
+            
             if (data) {
                 for (XAttribute at : e.getAttributes().values()) {
 
@@ -71,11 +73,9 @@ public class TraceAlloyCode {
                     }
                 }
             }
+            
             index++;
         }
-    }
-    public String getEventName(XEvent ev){
-        return ev.getAttributes().get("concept:name").toString();
     }
 
     public void setNumericData(Map<String, NumericDataImpl> numericData) {
