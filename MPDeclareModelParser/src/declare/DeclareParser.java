@@ -132,7 +132,7 @@ public class DeclareParser {
     }
 
     public static boolean isData(String line) {
-    	return line.matches(".+:\\s+(((integer|float)\\s+between\\s+\\d+(\\.\\d+)?\\s+and\\s+\\d+(\\.\\d+)?)|((\\S+,\\s+)*\\S+))\\s*") && !isTraceAttribute(line) && !isDataBinding(line);
+    	return line.matches(".+:\\s+(((integer|float)\\s+between\\s+-?\\d+(\\.\\d+)?\\s+and\\s+-?\\d+(\\.\\d+)?)|((\\S+,\\s+)*\\S+))\\s*") && !isTraceAttribute(line) && !isDataBinding(line);
     }
 
     public static boolean isDataBinding(String line) {
