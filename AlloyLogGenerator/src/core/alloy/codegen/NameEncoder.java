@@ -148,7 +148,7 @@ public class NameEncoder {
     									DataMappingElement elem = optElem.get();
     									
     									if (values.size() == 1
-        										&& values.iterator().next().matches("(integer|float) between \\d+(\\.\\d+)? and \\d+(\\.\\d+)?")) {
+        										&& values.iterator().next().matches("(integer|float) between -?\\d+(\\.\\d+)? and -?\\d+(\\.\\d+)?")) {
         									
         									String[] split = values.iterator().next().split(" ");
         									values.clear();
@@ -164,12 +164,12 @@ public class NameEncoder {
     									if (values.size() == 1) {
     										String singleValue = values.iterator().next();
 	    									
-    										if (singleValue.matches("float between \\d+(\\.\\d+)? and \\d+(\\.\\d+)?")) {
+    										if (singleValue.matches("float between -?\\d+(\\.\\d+)? and -?\\d+(\\.\\d+)?")) {
 	    										newElem = new DataMappingElement(DataMappingElement.Type.CONTINUOUS, name);
 	    										String[] split = singleValue.split(" ");
 	    										newElem.addValues(Set.of(split[2], split[4]));
 	    										
-	    									} else if (singleValue.matches("integer between \\d+ and \\d+")) {
+	    									} else if (singleValue.matches("integer between -?\\d+ and -?\\d+")) {
 	    										newElem = new DataMappingElement(DataMappingElement.Type.DISCRETE, name);
 	    										String[] split = singleValue.split(" ");
 	    										newElem.addValues(Set.of(split[2], split[4]));
