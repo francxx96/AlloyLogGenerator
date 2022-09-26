@@ -30,20 +30,23 @@ public class Global {
     public static Set<String> getAlloySupportedConstraints() {
         Set<String> supported = new HashSet<>();
         supported.add("Init");
+        supported.add("End");
         supported.add("Existence");
-        supported.add("Existence");
-        supported.add("Absence");
         supported.add("Absence");
         supported.add("Exactly");
         supported.add("Choice");
         supported.add("ExclusiveChoice");
         supported.add("RespondedExistence");
+        supported.add("CoExistence");
         supported.add("Response");
         supported.add("AlternateResponse");
         supported.add("ChainResponse");
         supported.add("Precedence");
         supported.add("AlternatePrecedence");
         supported.add("ChainPrecedence");
+        supported.add("Succession");
+        supported.add("AlternateSuccession");
+        supported.add("ChainSuccession");
         supported.add("NotRespondedExistence");
         supported.add("NotResponse");
         supported.add("NotPrecedence");

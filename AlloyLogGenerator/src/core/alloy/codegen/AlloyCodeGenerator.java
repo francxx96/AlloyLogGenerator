@@ -80,8 +80,8 @@ public class AlloyCodeGenerator {
 
         generateActivities(model.getActivities());
         generateEvents(maxTraceLength);
-        generateNextPredicate(maxTraceLength, mode);
-        generateAfterPredicate(maxTraceLength, mode);
+        generateNextPredicate(maxTraceLength);
+        generateAfterPredicate(maxTraceLength);
         generateDataBinding(model.getActivityToData(), model.getDataToActivity(), mode);
         
         if (vacuity)
@@ -108,8 +108,8 @@ public class AlloyCodeGenerator {
         // Add the current constraint in alloyConstraints array, will be size 1 but don't have to change other code.
         generateActivities(model.getActivities());
         generateEvents(maxTraceLength);
-        generateNextPredicate(maxTraceLength, "monitoring");
-        generateAfterPredicate(maxTraceLength, "monitoring");
+        generateNextPredicate(maxTraceLength);
+        generateAfterPredicate(maxTraceLength);
         
         if (isData) {
             List<EnumeratedDataImpl> data = collectData(model, 1);
@@ -134,8 +134,8 @@ public class AlloyCodeGenerator {
         // Add the current constraint in alloyConstraints array, will be size 1 but don't have to change other code.
         generateActivities(model.getActivities());
         generateEvents(maxTraceLength);
-        generateNextPredicate(maxTraceLength, "monitoring");
-        generateAfterPredicate(maxTraceLength, "monitoring");
+        generateNextPredicate(maxTraceLength);
+        generateAfterPredicate(maxTraceLength);
         
         List<DataConstraint> dcList = new ArrayList<>();
         List<Constraint> cList = new ArrayList<>();
@@ -426,73 +426,48 @@ public class AlloyCodeGenerator {
             Collections.shuffle(taskList);
 
         for (Activity i : taskList)
-            alloy.append("one sig ").append(i.getName()).append(" extends Activity {}\n");
+            alloy.append("one sig ").append(i.getName()).append(" extends Activity {}").append(System.lineSeparator());
     }
 
     private void generateEvents(int length) {
         for (int i=0; i < length; i++) {
-            if (i < minTraceLength)
-                alloy.append("one sig TE").append(i).append(" extends Event {}{not task=DummyActivity}\n");
-            else
-                alloy.append("one sig TE").append(i).append(" extends Event {}\n");
+        	alloy.append("one sig TE").append(i).append(" extends Event {}");
+            
+        	if (i < minTraceLength)
+                alloy.append("{not task=DummyActivity}");
+            
+            alloy.append(System.lineSeparator());
         }
     }
 
 
-    private void generateNextPredicate(int length, String mode) {
-        alloy.append("pred Next(pre, next: Event){");
+    private void generateNextPredicate(int length) {
+        alloy.append("pred Next(pre, next: Event) {").append(System.lineSeparator());
+        alloy.append("\t");
         
-        if (mode.equals("monitoring")) {
-        	if (length == 1) {
-            	alloy.append("pre=TE0 and not next=TE0");
-            } else {
-            	alloy.append("pre=TE0 and next=TE1");
-    	        for (int i=2; i < length; i++)
-    	            alloy.append(" or pre=TE").append(i - 1).append(" and next=TE").append(i);
-            }
-            
-        } else if (mode.equals("log_generation")) {
+    	if (length == 1) {
+        	alloy.append("pre=TE0 and not next=TE0");
+        	
+        } else {
         	alloy.append("pre=TE0 and next=TE1");
 	        for (int i=2; i < length; i++)
-	            alloy.append(" or pre=TE").append(i - 1).append(" and next=TE").append(i);
+	            alloy.append(" or pre=TE").append(i-1).append(" and next=TE").append(i);
         }
         
-        alloy.append("}\n");
+    	alloy.append(System.lineSeparator());
+    	alloy.append("}").append(System.lineSeparator());
     }
 
-    private void generateAfterPredicate(int length, String mode) {
-        alloy.append("pred After(b, a: Event){// b=before, a=after\n");
+    private void generateAfterPredicate(int length) {
+        alloy.append("pred After(b, a: Event) { // b=before, a=after").append(System.lineSeparator());
+        alloy.append("\t");
         
-        if (mode.equals("monitoring")) {
-	        if (length == 1) {
-	        	alloy.append("b=TE0 and not a=TE0");
-	        	
-	        } else {
-		        int middle = length / 2;
-		        for (int i=0; i < length - 1; ++i) {
-		            if (i > 0)
-		                alloy.append(" or ");
-		
-		            alloy.append("b=TE").append(i).append(" and ");
-		            
-		            if (i < middle) {
-		                alloy.append("not (a=TE").append(i);
-		                for (int j=0; j < i; ++j)
-		                    alloy.append(" or a=TE").append(j);
-		            
-		            } else {
-		                alloy.append("(a=TE").append(length - 1);
-		                for (int j=length-2; j > i; --j)
-		                    alloy.append(" or a=TE").append(j);
-		            }
-		            
-		            alloy.append(")");
-		        }
-	        }
+        if (length == 1) {
+        	alloy.append("b=TE0 and not a=TE0");
         
-        } else if (mode.equals("log_generation")) {
+        } else {
         	int middle = length / 2;
-	        for (int i=0; i < length - 1; ++i) {
+	        for (int i=0; i < length-1; ++i) {
 	            if (i > 0)
 	                alloy.append(" or ");
 	
@@ -511,49 +486,28 @@ public class AlloyCodeGenerator {
 	            
 	            alloy.append(")");
 	        }
-        }
-
-        alloy.append("}\n");
+	    }
+        
+        alloy.append(System.lineSeparator());
+        alloy.append("}").append(System.lineSeparator());
     }
 
     private void generateDataBinding(Map<String, Set<String>> activityToData, Map<String, Set<String>> dataToActivity, String mode) {
-    	if (mode.equals("monitoring")) {
-    		for (String activity : activityToData.keySet()) {
-                alloy.append("fact { all te: Event | te.task = ")
-                        .append(activity)
-                        .append(" implies (one ")
-                        .append(String.join(" & te.data and one ", activityToData.get(activity)))
-                        .append(" & te.data")
-                        .append(")}\n");
-            }
-
-            for (String payload : dataToActivity.keySet()) {
-                alloy.append("fact { all te: Event | lone(").append(payload).append(" & te.data) }\n");
-                alloy.append("fact { all te: Event | some (")
-                        .append(payload)
-                        .append(" & te.data) implies te.task in (")
-                        .append(String.join(" + ", dataToActivity.get(payload)))
-                        .append(") }\n");
-            }
-    		
-    	} else if (mode.equals("log_generation")) {
-    		for (String activity : activityToData.keySet()) {
-                alloy.append("fact { all te: Event | te.task = ")
-                        .append(activity)
-                        .append(" implies (one ")
-                        .append(String.join(" & te.data and one ", activityToData.get(activity)))
-                        .append(" & te.data")
-                        .append(")}\n");
-            }
-
-            for (String payload : dataToActivity.keySet()) {
-                alloy.append("fact { all te: Event | some (")
-                        .append(payload)
-                        .append(" & te.data) implies te.task in (")
-                        .append(String.join(" + ", dataToActivity.get(payload)))
-                        .append(") }\n");
-            }
+    	for (String activity : activityToData.keySet()) {
+            alloy.append("fact {").append(System.lineSeparator())
+            		.append("\tall te: Event | te.task = ").append(activity)
+                    .append(" implies (one ").append(String.join(" & te.data and one ", activityToData.get(activity))).append(" & te.data)").append(System.lineSeparator())
+                    .append("}").append(System.lineSeparator());
     	}
+    	
+    	for (String payload : dataToActivity.keySet()) {
+			if (mode.equals("monitoring"))
+				alloy.append("fact { all te: Event | lone(").append(payload).append(" & te.data) }").append(System.lineSeparator());
+			
+            alloy.append("fact {").append(System.lineSeparator()) 
+            		.append("\tall te: Event | some (").append(payload).append(" & te.data) implies te.task in (").append(String.join(" + ", dataToActivity.get(payload))).append(")").append(System.lineSeparator())
+            		.append("}").append(System.lineSeparator());
+        }
     }
 
     public void generateDataBindingForQuerying(Map<String, Set<String>> activityToData, Map<String, Set<String>> dataToActivity) {
@@ -618,121 +572,200 @@ public class AlloyCodeGenerator {
     }
 
     private String getBase() {
-        return "abstract sig Activity {}\n" +
-                "abstract sig Payload {}\n" +
-                "\n" +
-                "abstract sig Event{\n" +
-                "\ttask: one Activity,\n" +
-                "\tdata: set Payload,\n" +
-                "\ttokens: set Token\n" +
-                "}\n" +
-                "\n" +
-                "one sig DummyPayload extends Payload {}\n" +
-                "fact { no te:Event | DummyPayload in te.data }\n" +
-                "\n" +
-                "one sig DummyActivity extends Activity {}\n" +
-                "\n" +
-                "abstract sig Token {}\n" +
-                "abstract sig SameToken extends Token {}\n" +
-                "abstract sig DiffToken extends Token {}\n" +
-                "lone sig DummySToken extends SameToken{}\n" +
-                "lone sig DummyDToken extends DiffToken{}\n" +
-                "fact { \n" +
-                "\tno DummySToken\n" +
-                "\tno DummyDToken\n" +
-                "\tall te:Event| no (te.tokens & SameToken) or no (te.tokens & DiffToken)\n" +
-                "}\n" +
-                "\n" +
-                "pred True[]{some TE0}\n" +
-                "\n" +
-                "// lang templates\n" +
-                "\n" +
-                "pred Init(taskA: Activity) { \n" +
-                "\ttaskA = TE0.task\n" +
-                "}\n" +
-                "\n" +
-                "pred Existence(taskA: Activity) { \n" +
-                "\tsome te: Event | te.task = taskA\n" +
-                "}\n" +
-                "\n" +
-                "pred Existence(taskA: Activity, n: Int) {\n" +
-                "\t#{ te: Event | taskA = te.task } >= n\n" +
-                "}\n" +
-                "\n" +
-                "pred Absence(taskA: Activity) { \n" +
-                "\tno te: Event | te.task = taskA\n" +
-                "}\n" +
-                "\n" +
-                "pred Absence(taskA: Activity, n: Int) {\n" +
-                "\t#{ te: Event | taskA = te.task } < n\n" +
-                "}\n" +
-                "\n" +
-                "pred Exactly(taskA: Activity, n: Int) {\n" +
-                "\t#{ te: Event | taskA = te.task } = n\n" +
-                "}\n" +
-                "\n" +
-                "pred Choice(taskA, taskB: Activity) { \n" +
-                "\tsome te: Event | te.task = taskA or te.task = taskB\n" +
-                "}\n" +
-                "\n" +
-                "pred ExclusiveChoice(taskA, taskB: Activity) { \n" +
-                "\tsome te: Event | te.task = taskA or te.task = taskB\n" +
-                "\t(no te: Event | taskA = te.task) or (no te: Event | taskB = te.task )\n" +
-                "}\n" +
-                "\n" +
-                "pred RespondedExistence(taskA, taskB: Activity) {\n" +
-                "\t(some te: Event | taskA = te.task) implies (some ote: Event | taskB = ote.task)\n" +
-                "}\n" +
-                "\n" +
-                "pred Response(taskA, taskB: Activity) {\n" +
-                "\tall te: Event | taskA = te.task implies (some fte: Event | taskB = fte.task and After[te, fte])\n" +
-                "}\n" +
-                "\n" +
-                "pred AlternateResponse(taskA, taskB: Activity) {\n" +
-                "\tall te: Event | taskA = te.task implies (some fte: Event | taskB = fte.task and After[te, fte] and (no ite: Event | taskA = ite.task and After[te, ite] and After[ite, fte]))\n" +
-                "}\n" +
-                "\n" +
-                "pred ChainResponse(taskA, taskB: Activity) {\n" +
-                "\tall te: Event | taskA = te.task implies (some fte: Event | taskB = fte.task and Next[te, fte])\n" +
-                "}\n" +
-                "\n" +
-                "pred Precedence(taskA, taskB: Activity) {\n" +
-                "\tall te: Event | taskA = te.task implies (some fte: Event | taskB = fte.task and After[fte, te])\n" +
-                "}\n" +
-                "\n" +
-                "pred AlternatePrecedence(taskA, taskB: Activity) {\n" +
-                "\tall te: Event | taskA = te.task implies (some fte: Event | taskB = fte.task and After[fte, te] and (no ite: Event | taskA = ite.task and After[fte, ite] and After[ite, te]))\n" +
-                "}\n" +
-                "\n" +
-                "pred ChainPrecedence(taskA, taskB: Activity) {\n" +
-                "\tall te: Event | taskA = te.task implies (some fte: Event | taskB = fte.task and Next[fte, te])\n" +
-                "}\n" +
-                "\n" +
-                "pred NotRespondedExistence(taskA, taskB: Activity) {\n" +
-                "\t(some te: Event | taskA = te.task) implies (no te: Event | taskB = te.task)\n" +
-                "}\n" +
-                "\n" +
-                "pred NotResponse(taskA, taskB: Activity) {\n" +
-                "\tall te: Event | taskA = te.task implies (no fte: Event | taskB = fte.task and After[te, fte])\n" +
-                "}\n" +
-                "\n" +
-                "pred NotPrecedence(taskA, taskB: Activity) {\n" +
-                "\tall te: Event | taskA = te.task implies (no fte: Event | taskB = fte.task and After[fte, te])\n" +
-                "}\n" +
-                "\n" +
-                "pred NotChainResponse(taskA, taskB: Activity) { \n" +
-                "\tall te: Event | taskA = te.task implies (no fte: Event | (DummyActivity = fte.task or taskB = fte.task) and Next[te, fte])\n" +
-                "}\n" +
-                "\n" +
-                "pred NotChainPrecedence(taskA, taskB: Activity) {\n" +
-                "\tall te: Event | taskA = te.task implies (no fte: Event | (DummyActivity = fte.task or taskB = fte.task) and Next[fte, te])\n" +
-                "}\n" +
-                "//-\n" +
-                "\n" +
-                "pred example { }\n" +
-                "run example\n" +
-                "\n---------------------- end of static code block ----------------------\n" +
-                "\n--------------------- generated code starts here ---------------------\n\n";
+    	StringBuilder sb = new StringBuilder();
+    	sb.append("abstract sig Activity {}").append(System.lineSeparator());
+    	sb.append("abstract sig Payload {}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("abstract sig Event {").append(System.lineSeparator());
+    	sb.append(	"\ttask: one Activity,").append(System.lineSeparator());
+    	sb.append(	"\tdata: set Payload,").append(System.lineSeparator());
+    	sb.append(	"\ttokens: set Token").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("one sig DummyPayload extends Payload {}").append(System.lineSeparator());
+    	sb.append("fact { no te:Event | DummyPayload in te.data }").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("one sig DummyActivity extends Activity {}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("abstract sig Token {}").append(System.lineSeparator());
+    	sb.append("abstract sig SameToken extends Token {}").append(System.lineSeparator());
+    	sb.append("abstract sig DiffToken extends Token {}").append(System.lineSeparator());
+    	sb.append("lone sig DummySToken extends SameToken{}").append(System.lineSeparator());
+    	sb.append("lone sig DummyDToken extends DiffToken{}").append(System.lineSeparator());
+    	sb.append("fact {").append(System.lineSeparator());
+    	sb.append(	"\tno DummySToken").append(System.lineSeparator());
+    	sb.append(	"\tno DummyDToken").append(System.lineSeparator());
+    	sb.append(	"\tall te:Event| no (te.tokens & SameToken) or no (te.tokens & DiffToken)").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred True[]{some TE0}").append(System.lineSeparator());
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("// DECLARE templates definition start").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred Init(taskA: Activity) {").append(System.lineSeparator());
+    	sb.append(	"\ttaskA = TE0.task").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred Existence(taskA: Activity, n: Int) {").append(System.lineSeparator());
+    	sb.append(	"\t#{ te: Event | taskA = te.task } >= n").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred Absence(taskA: Activity, n: Int) {").append(System.lineSeparator());
+    	sb.append(	"\t#{ te: Event | taskA = te.task } < n").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());   
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred Exactly(taskA: Activity, n: Int) {").append(System.lineSeparator());
+    	sb.append(	"\t#{ te: Event | taskA = te.task } = n").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred End(taskA: Activity) {").append(System.lineSeparator());
+    	sb.append(	"\tsome te: Event | taskA = te.task and no fte: Event | Next[te, fte]").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred Choice(taskA, taskB: Activity) {").append(System.lineSeparator());
+    	sb.append(	"\tsome te: Event | te.task = taskA or te.task = taskB").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred ExclusiveChoice(taskA, taskB: Activity) {").append(System.lineSeparator());
+    	sb.append(	"\tsome te: Event | te.task = taskA or te.task = taskB").append(System.lineSeparator());
+    	sb.append(	"\t(no te: Event | taskA = te.task) or (no te: Event | taskB = te.task )").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred RespondedExistence(taskA, taskB: Activity) {").append(System.lineSeparator());
+    	sb.append(	"\t(some te: Event | taskA = te.task) implies (some ote: Event | taskB = ote.task)").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred CoExistence(taskA, taskB: Activity) {").append(System.lineSeparator());
+    	sb.append(	"\tRespondedExistence[taskA, taskB] and RespondedExistence[taskB, taskA]").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred Response(taskA, taskB: Activity) {").append(System.lineSeparator());
+    	sb.append(	"\tall te: Event | taskA = te.task implies (some fte: Event | taskB = fte.task and After[te, fte])").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred Precedence(taskA, taskB: Activity) {").append(System.lineSeparator());
+    	sb.append(	"\tall te: Event | taskA = te.task implies (some fte: Event | taskB = fte.task and After[fte, te])").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred Succession(taskA, taskB: Activity) {").append(System.lineSeparator());
+    	sb.append(	"\tResponse[taskA, taskB] and Precedence[taskB, taskA]").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred AlternateResponse(taskA, taskB: Activity) {").append(System.lineSeparator());
+    	sb.append(	"\tall te: Event | taskA = te.task implies (some fte: Event | taskB = fte.task and After[te, fte] and (no ite: Event | taskA = ite.task and After[te, ite] and After[ite, fte]))").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred AlternatePrecedence(taskA, taskB: Activity) {").append(System.lineSeparator());
+    	sb.append(	"\tall te: Event | taskA = te.task implies (some fte: Event | taskB = fte.task and After[fte, te] and (no ite: Event | taskA = ite.task and After[fte, ite] and After[ite, te]))").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred AlternateSuccession(taskA, taskB: Activity) {").append(System.lineSeparator());
+    	sb.append(	"\tAlternateResponse[taskA, taskB] and AlternatePrecedence[taskB, taskA]").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred ChainResponse(taskA, taskB: Activity) {").append(System.lineSeparator());
+    	sb.append(	"\tall te: Event | taskA = te.task implies (some fte: Event | taskB = fte.task and Next[te, fte])").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred ChainPrecedence(taskA, taskB: Activity) {").append(System.lineSeparator());
+    	sb.append(	"\tall te: Event | taskA = te.task implies (some fte: Event | taskB = fte.task and Next[fte, te])").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred ChainSuccession(taskA, taskB: Activity) {").append(System.lineSeparator());
+    	sb.append(	"\tChainResponse[taskA, taskB] and ChainPrecedence[taskB, taskA]").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred NotRespondedExistence(taskA, taskB: Activity) {").append(System.lineSeparator());
+    	sb.append(	"\t(some te: Event | taskA = te.task) implies (no te: Event | taskB = te.task)").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred NotResponse(taskA, taskB: Activity) {").append(System.lineSeparator());
+    	sb.append(	"\tall te: Event | taskA = te.task implies (no fte: Event | taskB = fte.task and After[te, fte])").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred NotPrecedence(taskA, taskB: Activity) {").append(System.lineSeparator());
+    	sb.append(	"\tall te: Event | taskA = te.task implies (no fte: Event | taskB = fte.task and After[fte, te])").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred NotChainResponse(taskA, taskB: Activity) {").append(System.lineSeparator());
+    	sb.append(	"\tall te: Event | taskA = te.task implies (no fte: Event | (DummyActivity = fte.task or taskB = fte.task) and Next[te, fte])").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred NotChainPrecedence(taskA, taskB: Activity) {").append(System.lineSeparator());
+    	sb.append(	"\tall te: Event | taskA = te.task implies (no fte: Event | (DummyActivity = fte.task or taskB = fte.task) and Next[fte, te])").append(System.lineSeparator());
+    	sb.append("}").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	sb.append("// DECLARE templates definition end").append(System.lineSeparator());
+    	sb.append(System.lineSeparator());
+    	
+    	sb.append("pred example { }").append(System.lineSeparator());
+    	sb.append("run example").append(System.lineSeparator());
+    	
+    	sb.append(System.lineSeparator());
+    	sb.append("---------------------- end of static code block ----------------------").append(System.lineSeparator());
+    	sb.append(System.lineSeparator());
+    	sb.append("--------------------- generated code starts here ---------------------").append(System.lineSeparator());
+    	sb.append(System.lineSeparator());
+        
+        return sb.toString();
         //return IOHelper.readAllText("./data/base.als");
     }
 }

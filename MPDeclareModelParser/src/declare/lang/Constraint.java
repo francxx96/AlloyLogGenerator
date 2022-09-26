@@ -52,26 +52,17 @@ public class Constraint {
     }
 
     public boolean supportsVacuity() {
-        return isBinary() && (getName().equals("RespondedExistence") ||
-                getName().equals("Response") ||
-                getName().equals("AlternateResponse") ||
-                getName().equals("ChainResponse") ||
-                getName().equals("Precedence") ||
-                getName().equals("AlternatePrecedence") ||
-                getName().equals("ChainPrecedence") ||
-                getName().equals("NotRespondedExistence") ||
-                getName().equals("NotResponse") ||
-                getName().equals("NotPrecedence") ||
-                getName().equals("NotChainResponse") ||
-                getName().equals("NotChainPrecedence"));
+        return isBinary() 
+        		&& (getName().equals("RespondedExistence") || getName().equals("CoExistence")
+        				|| getName().equals("Response") || getName().equals("AlternateResponse") || getName().equals("ChainResponse")
+        				|| getName().equals("Precedence") || getName().equals("AlternatePrecedence") || getName().equals("ChainPrecedence") 
+        				|| getName().equals("Succession") || getName().equals("AlternateSuccession") || getName().equals("ChainSuccession")
+        				|| getName().equals("NotRespondedExistence") || getName().equals("NotResponse") || getName().equals("NotPrecedence")
+        				|| getName().equals("NotChainResponse") || getName().equals("NotChainPrecedence"));
     }
     
     @Override
     public String toString() {
-        return "Constraint{" +
-                "name='" + name + '\'' +
-                ", args=" + args +
-                ", statement=" + statement +
-                '}';
+        return "Constraint{name='" + name + "', args=" + args + ", statement=" + statement + "}";
     }
 }
