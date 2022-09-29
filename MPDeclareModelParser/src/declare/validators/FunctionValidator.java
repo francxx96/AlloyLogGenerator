@@ -11,7 +11,7 @@ public class FunctionValidator {
     public static String validate(String functionString) {
         ValidationResult result = new ValidationResult();
         try {
-            new DataExpressionParser().parse(functionString);
+        	DataExpressionParser.parse(functionString);
         } catch (DeclareParserException e) {
             result.setErrorCode(1);
             result.setMessage(e.getMessage());

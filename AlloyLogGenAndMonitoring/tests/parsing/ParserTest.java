@@ -19,7 +19,6 @@ import java.util.*;
  * Created by Vasiliy on 2017-10-25.
  */
 public class ParserTest {
-    DeclareParser parser = new DeclareParser();
     AlloyCodeGenerator gen = new AlloyCodeGenerator(2, 2, 2, 2, false, false, true);
 
     @Test
@@ -27,7 +26,7 @@ public class ParserTest {
         Set<EnumeratedData> ed = new HashSet<>();
         Set<IntegerData> id = new HashSet<>();
         Set<FloatData> fd = new HashSet<>();
-        parser.parseData(Arrays.asList(
+        DeclareParser.parseData(Arrays.asList(
                 "TransportType: Car, Plane, Train, Bus",
                 "Price integer between 0 and 300",
                 "Angle float between 0 and 180"),

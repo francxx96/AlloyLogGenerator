@@ -17,38 +17,57 @@ import java.util.*;
  */
 public class DeclareModel {
 
-    Set<Activity> activities;
-    Set<EnumeratedData> enumeratedData;
-    Set<IntegerData> integerData;
-    Set<FloatData> floatData;
-    List<Constraint> constraints;
-    List<DataConstraint> dataConstraints;
+    private Set<Activity> activities;
+    private Set<EnumeratedData> enumeratedData;
+    private Set<IntegerData> integerData;
+    private Set<FloatData> floatData;
+    private List<Constraint> constraints;
+    private List<DataConstraint> dataConstraints;
 
-    Map<String, Set<String>> activityToData;
-    Map<String, Set<String>> dataToActivity;
+    private Map<String, Set<String>> activityToData;
+    private Map<String, Set<String>> dataToActivity;
 
-    List<EnumTraceAttribute> enumTraceAttributes;
-    List<IntTraceAttribute> intTraceAttributes;
-    List<FloatTraceAttribute> floatTraceAttributes;
+    private List<EnumTraceAttribute> enumTraceAttributes;
+    private List<IntTraceAttribute> intTraceAttributes;
+    private List<FloatTraceAttribute> floatTraceAttributes;
 
     public DeclareModel() {
-        activities = new HashSet<>();
-        enumeratedData = new HashSet<>();
-        constraints = new ArrayList<>();
-        dataConstraints = new ArrayList<>();
+        this.activities = new HashSet<>();
+        this.enumeratedData = new HashSet<>();
+        this.constraints = new ArrayList<>();
+        this.dataConstraints = new ArrayList<>();
 
-        activityToData = new HashMap<>();
-        dataToActivity = new HashMap<>();
+        this.activityToData = new HashMap<>();
+        this.dataToActivity = new HashMap<>();
 
-        integerData = new HashSet<>();
-        floatData = new HashSet<>();
-        enumeratedData = new HashSet<>();
+        this.integerData = new HashSet<>();
+        this.floatData = new HashSet<>();
+        this.enumeratedData = new HashSet<>();
 
-        intTraceAttributes = new ArrayList<>();
-        floatTraceAttributes = new ArrayList<>();
-        enumTraceAttributes = new ArrayList<>();
+        this.intTraceAttributes = new ArrayList<>();
+        this.floatTraceAttributes = new ArrayList<>();
+        this.enumTraceAttributes = new ArrayList<>();
     }
+    
+    // Copy constructor
+    public DeclareModel(DeclareModel model) {
+    	this.activities = new HashSet<>(model.getActivities());
+    	this.enumeratedData = new HashSet<>(model.getEnumeratedData());
+    	this.constraints = new ArrayList<>(model.getConstraints());
+    	this.dataConstraints = new ArrayList<>(model.getDataConstraints());
 
+        this.activityToData = new HashMap<>(model.getActivityToData());
+        this.dataToActivity = new HashMap<>(model.getDataToActivity());
+
+        this.integerData = new HashSet<>(model.getIntegerData());
+        this.floatData = new HashSet<>(model.getFloatData());
+        this.enumeratedData = new HashSet<>(model.getEnumeratedData());
+
+        this.intTraceAttributes = new ArrayList<>(model.getIntTraceAttributes());
+        this.floatTraceAttributes = new ArrayList<>(model.getFloatTraceAttributes());
+        this.enumTraceAttributes = new ArrayList<>(model.getEnumTraceAttributes());
+    }
+    
     public Set<Activity> getActivities() {
         return activities;
     }

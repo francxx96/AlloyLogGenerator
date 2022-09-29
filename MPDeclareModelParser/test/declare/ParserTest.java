@@ -18,14 +18,13 @@ import java.util.stream.Stream;
  * Created by Vasiliy on 2017-10-25.
  */
 public class ParserTest {
-    DeclareParser parser = new DeclareParser();
 
     @Test
     public void testTraceAttributes() {
         List<EnumTraceAttribute> eta = new ArrayList<>();
         List<IntTraceAttribute> ita = new ArrayList<>();
         List<FloatTraceAttribute> fta = new ArrayList<>();
-        parser.parseTraceAttributes(Arrays.asList(
+        DeclareParser.parseTraceAttributes(Arrays.asList(
                 "trace AttrName: value1, value2",
                 "trace Age integer between 10 and 100",
                 "trace Angle float between 0.01 and 179.99"),
@@ -57,7 +56,7 @@ public class ParserTest {
         List<Statement> raw = Stream.of("Absence[BookTransport A] | A.Price is High and A.Speed is Low",
                 "RespondedExistence[BookTransport A, UseTransport B] | A.TransportType is Car | B.Speed is not Low")
                 .map(i -> new Statement(i, 0)).collect(Collectors.toList());
-        List<DataConstraint> dcs = parser.parseDataConstraints(raw);
+        List<DataConstraint> dcs = DeclareParser.parseDataConstraints(raw);
         Assert.assertEquals(dcs.size(), 2);
         DataConstraint first = dcs.get(0);
         DataConstraint second = dcs.get(1);

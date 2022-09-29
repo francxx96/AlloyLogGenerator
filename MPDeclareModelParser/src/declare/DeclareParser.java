@@ -25,19 +25,21 @@ import core.Global;
 /**
  * Created by Vasiliy on 2017-10-16.
  */
-public class DeclareParser {
-    Pattern inRectBrackets = Pattern.compile(".*\\[\\s*(.+?)\\s*].*");
+public final class DeclareParser {
+	private static Pattern inRectBrackets = Pattern.compile(".*\\[\\s*(.+?)\\s*].*");
 
-    List<String> tasksCode;
-    List<String> traceAttributesCode;
-    List<String> dataCode;
-    List<String> dataBindingsCode;
-    List<Statement> constraintsCode;
-    List<Statement> dataConstraintsCode;
+    private static List<String> tasksCode;
+    private static List<String> traceAttributesCode;
+    private static List<String> dataCode;
+    private static List<String> dataBindingsCode;
+    private static List<Statement> constraintsCode;
+    private static List<Statement> dataConstraintsCode;
 
-    DataExpressionParser expressionParser = new DataExpressionParser();
+    private DeclareParser() {
+    	throw new AssertionError();
+    }
 
-    public DeclareModel parse(String declare) throws DeclareParserException {
+    public static DeclareModel parse(String declare) throws DeclareParserException {
         init();
         DeclareModel model = new DeclareModel();
         
@@ -58,7 +60,7 @@ public class DeclareParser {
         return model;
     }
 
-    private void init() {
+    private static void init() {
         tasksCode = new ArrayList<>();
         traceAttributesCode = new ArrayList<>();
         dataCode = new ArrayList<>();
@@ -67,7 +69,7 @@ public class DeclareParser {
         dataConstraintsCode = new ArrayList<>();
     }
 
-    private void sortInput(String[] st) {
+    private static void sortInput(String[] st) {
         int line = 0;
         for (String i : st) {
             ++line;
@@ -95,7 +97,7 @@ public class DeclareParser {
         }
     }
 
-    private void parseDataBindings(Map<String, Set<String>> activityToData, Map<String, Set<String>> dataToActivity) {
+    private static void parseDataBindings(Map<String, Set<String>> activityToData, Map<String, Set<String>> dataToActivity) {
         for (String line : dataBindingsCode) {
             line = line.substring(5);
             List<String> data = Arrays.stream(line.split("[:,\\s+]+")).filter(i -> !i.isEmpty()).collect(Collectors.toList());
@@ -113,7 +115,7 @@ public class DeclareParser {
         }
     }
 
-    private List<Constraint> parseConstraints() {
+    private static List<Constraint> parseConstraints() {
         List<Constraint> constraints = new ArrayList<>();
         for (Statement s : constraintsCode) {
             String[] p = s.getCode().split("\\s*[\\[\\],]\\s*");
@@ -152,7 +154,7 @@ public class DeclareParser {
         return code.replace("\r\n", "\n").split("\n");
     }
 
-    public Set<Activity> parseActivities(List<String> tasksCode) {
+    public static Set<Activity> parseActivities(List<String> tasksCode) {
         Set<Activity> data = new HashSet<>();
         for (String i : tasksCode) {
             String name = i.substring(9); // syntax: 'activity ActivityName'
@@ -162,7 +164,7 @@ public class DeclareParser {
         return data;
     }
 
-    public void parseData(List<String> dataCode, Set<EnumeratedData> edata, Set<IntegerData> idata, Set<FloatData> fdata) {
+    public static void parseData(List<String> dataCode, Set<EnumeratedData> edata, Set<IntegerData> idata, Set<FloatData> fdata) {
         for (String i : dataCode) {
             String[] a = i.split(":\\s*|,?\\s+");
 
@@ -175,7 +177,7 @@ public class DeclareParser {
         }
     }
 
-    public List<DataConstraint> parseDataConstraints(List<Statement> dataConstraintsCode) throws DeclareParserException {
+    public static List<DataConstraint> parseDataConstraints(List<Statement> dataConstraintsCode) throws DeclareParserException {
         List<DataConstraint> dataConstraints = new ArrayList<>();
         for (Statement st : dataConstraintsCode) {
             String[] lr = st.getCode().split("\\|", -1);
@@ -189,7 +191,7 @@ public class DeclareParser {
 
             List<DataFunction> fns = new ArrayList<>();
             for (int i = 1; i < lr.length; ++i) {
-                DataExpression expr = expressionParser.parse(lr[i]);
+                DataExpression expr = DataExpressionParser.parse(lr[i]);
                 DataFunction fn = new DataFunction(args.stream().filter(x -> x.length >= 2).map(x -> x[1]).limit(i).collect(Collectors.toList()), expr);
                 fns.add(fn);
             }
@@ -202,13 +204,13 @@ public class DeclareParser {
     }
 
 
-    private String getActivityArgsFromConstraintText(String v) {
+    private static String getActivityArgsFromConstraintText(String v) {
         Matcher m = inRectBrackets.matcher(v);
         m.matches();
         return m.group(1);
     }
 
-    public void parseTraceAttributes(List<String> traceAttributesCode, List<EnumTraceAttribute> eta,
+    public static void parseTraceAttributes(List<String> traceAttributesCode, List<EnumTraceAttribute> eta,
                                      List<IntTraceAttribute> ita, List<FloatTraceAttribute> fta) {
         for (String i : traceAttributesCode) {
             String[] a = i.split(":\\s*|,?\\s+");
@@ -223,7 +225,7 @@ public class DeclareParser {
     }
     
  // May throw exception if name might interfere with reserved keywords
-    private void checkInterference(String declare, List<String> names) {
+    private static void checkInterference(String declare, List<String> names) {
         //String keywords = IOHelper.readAllText("./data/keywords.txt");
         String keywords = " activity x\n" +
                 " Init[]\n" +
@@ -284,9 +286,5 @@ public class DeclareParser {
 	            Global.log.accept("The name '" + name + "' might be part of reserved keyword. If other errors appear try to rename it or use in quote marks.");
 	        }
         }
-    }
-    
-    public List<Statement> getDataConstraintsCode() {
-        return dataConstraintsCode;
     }
 }
