@@ -167,12 +167,18 @@ public class NameEncoder {
     										if (singleValue.matches("float between -?\\d+(\\.\\d+)? and -?\\d+(\\.\\d+)?")) {
 	    										newElem = new DataMappingElement(DataMappingElement.Type.CONTINUOUS, name);
 	    										String[] split = singleValue.split(" ");
-	    										newElem.addValues(Set.of(split[2], split[4]));
+	    										HashSet<String> tmp = new HashSet<>();
+	    										tmp.add(split[2]);
+	    										tmp.add(split[4]);
+	    										newElem.addValues(tmp);
 	    										
 	    									} else if (singleValue.matches("integer between -?\\d+ and -?\\d+")) {
 	    										newElem = new DataMappingElement(DataMappingElement.Type.DISCRETE, name);
 	    										String[] split = singleValue.split(" ");
-	    										newElem.addValues(Set.of(split[2], split[4]));
+	    										HashSet<String> tmp = new HashSet<>();
+	    										tmp.add(split[2]);
+	    										tmp.add(split[4]);
+	    										newElem.addValues(tmp);
 	    										
 	    									} else {
 	    										newElem = new DataMappingElement(DataMappingElement.Type.LITERAL, name);
